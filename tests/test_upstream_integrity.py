@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -41,12 +42,16 @@ class UpstreamIntegrityTests(unittest.TestCase):
                 self.assertEqual(arguments, ["rev-parse", "HEAD"])
                 return "1" * 40
 
+            real_replace = os.replace
+
+            def fail_lock_replace(source, destination):
+                if Path(destination) == root / "upstream-lock.json":
+                    raise OSError("simulated lock replacement failure")
+                real_replace(source, destination)
+
             with (
                 mock.patch("scripts.sync_upstreams._run_git", side_effect=fake_run_git),
-                mock.patch(
-                    "scripts.sync_upstreams._atomic_write_json",
-                    side_effect=OSError("simulated lock replacement failure"),
-                ),
+                mock.patch("scripts.sync_upstreams.os.replace", side_effect=fail_lock_replace),
             ):
                 with self.assertRaisesRegex(OSError, "simulated lock replacement failure"):
                     sync(selection_path, root, update=True)
@@ -56,6 +61,10 @@ class UpstreamIntegrityTests(unittest.TestCase):
                 json.loads((root / "upstream-lock.json").read_text(encoding="utf-8")), old_lock
             )
             self.assertFalse((root / ".vendor-sync-backup").exists())
+            self.assertEqual(
+                {entry.name for entry in root.iterdir()},
+                {"selection.json", "upstream-lock.json", "vendor"},
+            )
 
     def test_lock_matches_vendor_tree(self):
         lock = json.loads((ROOT / "upstream-lock.json").read_text(encoding="utf-8"))

@@ -82,8 +82,13 @@ class LifecycleTests(unittest.TestCase):
                 ("hello world", "Check: focused test\nResult: passed — 1 check", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: TBD\nResult: passed — 1 check", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed content", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: PASSED — DETAILS", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed - placeholder", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: FAILED — TODO", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: {{DETAIL}}", "Check: focused test\nResult: passed — 1 check", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: changed — DETAILS", "Check: focused test\nResult: passed — 1 check", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: NOT-RUN", "Current state: PLACEHOLDER\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed — 1 check", "Current state: verified — DETAILS\nNext action: review"),
                 ("- Surface:\n  State:\n  Detail:", "Check:\nResult:", "Current state:\nNext action:"),
             )):
                 session = open_session(vault, workstream, f"verify {index}", datetime(2026, 8, 27, 9, 30 + index), "agent-a")
@@ -91,6 +96,22 @@ class LifecycleTests(unittest.TestCase):
                 write_note(note.__class__(note.path, note.properties, self._evidence_body(note.body, actual, verification, handoff)))
                 with self.assertRaises(LifecycleStateError):
                     close_session(vault, session, None)
+
+    def test_close_accepts_concrete_result_details(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            for index, result in enumerate((
+                "passed — 26 tests",
+                "manual-check — login succeeded in staging",
+            )):
+                session = open_session(vault, workstream, f"verify concrete {index}", datetime(2026, 8, 27, 10, index), "agent-a")
+                note = parse_note(session)
+                verification = f"Check: release verification\nResult: {result}"
+                write_note(note.__class__(note.path, note.properties, self._evidence_body(note.body, verification=verification)))
+                close_session(vault, session, None)
+                self.assertEqual(parse_note(session).properties["status"], "verified")
 
     def test_close_preserves_explicit_complete_and_nonmatching_current_session(self):
         with tempfile.TemporaryDirectory() as directory:

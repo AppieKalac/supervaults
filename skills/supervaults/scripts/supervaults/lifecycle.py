@@ -25,6 +25,18 @@ _RESULT_VALUE = re.compile(
     r"^(?:passed|failed|not-run|manual-check)\s*(?:(?::|--|—|-)\s*.+|\(.+\))$",
     re.IGNORECASE,
 )
+_FILLER_COMPACT = frozenset(
+    {
+        "details",
+        "detailshere",
+        "adddetailshere",
+        "insertevidencehere",
+        "actualblastradius",
+        "verificationevidence",
+        "handoff",
+        "notapplicable",
+    }
+)
 
 
 class LifecycleStateError(ValueError):
@@ -105,12 +117,25 @@ def _is_non_placeholder_value(value: str) -> bool:
     normalized = " ".join(value.strip().split())
     if not normalized or _UNRESOLVED_MARKER.search(normalized) or _PLACEHOLDER.search(normalized):
         return False
-    if normalized.casefold() in {
-        "details", "details here", "add details here", "insert evidence here",
-        "actual blast radius", "verification evidence", "handoff", "not applicable",
-    }:
+    if _compact(normalized) in _FILLER_COMPACT:
         return False
-    return True
+    return not _has_filler_detail_segment(normalized)
+
+
+def _compact(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.casefold())
+
+
+def _has_filler_detail_segment(value: str) -> bool:
+    """Reject a separator suffix when it contains only template filler."""
+
+    segments = re.split(r"\s*(?:—|--)\s*|\s+-\s+|:\s*", value)
+    for segment in segments[1:]:
+        if _compact(segment) in _FILLER_COMPACT:
+            return True
+        if _UNRESOLVED_MARKER.search(segment) or _PLACEHOLDER.search(segment):
+            return True
+    return False
 
 
 def _field_values(content: str, label: str) -> list[str]:

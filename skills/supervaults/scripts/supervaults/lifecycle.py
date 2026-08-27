@@ -8,7 +8,7 @@ import re
 import tempfile
 
 from .markdown import Note, parse_note, write_note
-from .schema import TYPE_STATUSES, WORKSTREAM_STAGES
+from .schema import IMPACT_SURFACES, TYPE_STATUSES, WORKSTREAM_STAGES
 from .vault import render_template
 
 
@@ -17,10 +17,13 @@ _WIKI_LINK = re.compile(r"^\[\[([^\]|]+)(?:\|[^\]]+)?\]\]$")
 _HEADING = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 _SLUG = re.compile(r"[^a-z0-9]+")
 _UNRESOLVED_MARKER = re.compile(r"\{\{[^{}]+\}\}|<[^>\n]+>")
-_PLACEHOLDER = re.compile(r"\b(?:tbd|todo|to do|placeholder|copied filler|lorem ipsum|sample text|example text)\b")
-_RESULT_SIGNAL = re.compile(
-    r"\b(?:pass(?:ed|es)?|fail(?:ed|s|ure)?|result(?:s)?|exit(?:\s+code)?|"
-    r"manual(?:ly)?\s+check(?:ed)?|checked|not[- ]run)\b"
+_PLACEHOLDER = re.compile(
+    r"\b(?:tbd|todo|to do|placeholder|copied filler|lorem ipsum|sample text|example text)\b",
+    re.IGNORECASE,
+)
+_RESULT_VALUE = re.compile(
+    r"^(?:passed|failed|not-run|manual-check)\s*(?:(?::|--|—|-)\s*.+|\(.+\))$",
+    re.IGNORECASE,
 )
 
 
@@ -96,24 +99,67 @@ def _section_content(body: str, name: str) -> str:
     return body[match.end(): next_heading.start() if next_heading else len(body)].strip()
 
 
-def _is_substantive_section(content: str, require_result_signal: bool = False) -> bool:
-    """Reject empty, placeholder, and generic filler evidence before transition."""
+def _is_non_placeholder_value(value: str) -> bool:
+    """Accept a populated evidence field only when it is not a template placeholder."""
 
-    normalized = " ".join(content.strip().split())
-    compact = re.sub(r"[^a-z0-9]", "", normalized.casefold())
-    if len(compact) < 8 or _UNRESOLVED_MARKER.search(normalized) or _PLACEHOLDER.search(normalized):
+    normalized = " ".join(value.strip().split())
+    if not normalized or _UNRESOLVED_MARKER.search(normalized) or _PLACEHOLDER.search(normalized):
         return False
     if normalized.casefold() in {
         "details", "details here", "add details here", "insert evidence here",
         "actual blast radius", "verification evidence", "handoff", "not applicable",
     }:
         return False
-    if not require_result_signal or _RESULT_SIGNAL.search(normalized) is None:
-        return not require_result_signal
-    if re.search(r"\bnot[- ]run\b", normalized, re.IGNORECASE):
-        explanation = re.sub(r"\bnot[- ]run\b", "", normalized, flags=re.IGNORECASE)
-        return len(re.sub(r"[^a-z0-9]", "", explanation.casefold())) >= 8
     return True
+
+
+def _field_values(content: str, label: str) -> list[str]:
+    pattern = re.compile(rf"^\s*(?:-\s*)?{re.escape(label)}:\s*(.*)$", re.IGNORECASE | re.MULTILINE)
+    return [match.group(1).strip() for match in pattern.finditer(content)]
+
+
+def _has_valid_actual_blast_radius(content: str) -> bool:
+    canonical_surfaces = {surface.casefold() for surface in IMPACT_SURFACES}
+    surface_pattern = re.compile(r"^\s*(?:-\s*)?Surface:\s*(.*)$", re.IGNORECASE | re.MULTILINE)
+    surfaces = list(surface_pattern.finditer(content))
+    for index, surface_match in enumerate(surfaces):
+        if surface_match.group(1).strip().casefold() not in canonical_surfaces:
+            continue
+        block_end = surfaces[index + 1].start() if index + 1 < len(surfaces) else len(content)
+        block = content[surface_match.end():block_end]
+        states = _field_values(block, "State")
+        if not states:
+            continue
+        state = states[0].casefold()
+        if state not in {"changed", "unchanged", "not-applicable", "unknown", "not-checked"}:
+            continue
+        details = _field_values(block, "Detail")
+        if state == "unchanged" or (details and _is_non_placeholder_value(details[0])):
+            return True
+    return False
+
+
+def _has_valid_verification_evidence(content: str) -> bool:
+    checks = _field_values(content, "Check")
+    results = _field_values(content, "Result")
+    return bool(
+        checks
+        and results
+        and _is_non_placeholder_value(checks[0])
+        and _is_non_placeholder_value(results[0])
+        and _RESULT_VALUE.fullmatch(results[0])
+    )
+
+
+def _has_valid_handoff(content: str) -> bool:
+    current_states = _field_values(content, "Current state")
+    next_actions = _field_values(content, "Next action")
+    return bool(
+        current_states
+        and next_actions
+        and _is_non_placeholder_value(current_states[0])
+        and _is_non_placeholder_value(next_actions[0])
+    )
 
 
 def _canonical_workstream(vault: Path, workstream: Path) -> Path:
@@ -209,13 +255,14 @@ def close_session(vault: Path, session: Path, end_commit: str | None) -> None:
     expected_session_directory = workstream_path.parent / "sessions"
     if session.resolve().parent != expected_session_directory:
         raise LifecycleStateError(f"{session}: session must be inside {expected_session_directory}")
-    for heading, needs_result in (
-        ("Actual blast radius", False),
-        ("Verification evidence", True),
-        ("Handoff", False),
-    ):
-        if not _is_substantive_section(_section_content(note.body, heading), needs_result):
-            raise LifecycleStateError(f"{session}: ## {heading} requires substantive content before close")
+    required_sections = (
+        ("Actual blast radius", _has_valid_actual_blast_radius),
+        ("Verification evidence", _has_valid_verification_evidence),
+        ("Handoff", _has_valid_handoff),
+    )
+    for heading, is_valid in required_sections:
+        if not is_valid(_section_content(note.body, heading)):
+            raise LifecycleStateError(f"{session}: ## {heading} does not meet the structured evidence contract")
 
     updated_properties = dict(note.properties)
     # `complete` is an explicit requested state; mechanical closure otherwise only verifies evidence.

@@ -25,7 +25,7 @@ class LifecycleTests(unittest.TestCase):
         workstream.write_text("---\ntype: workstream\nstage: verification\nstatus: active\nproject: '[[Home]]'\n---\n# Barcode Scanning\n", encoding="utf-8")
         return workstream
 
-    def _evidence_body(self, body: str, actual: str = "Affected scanner parsing only.", verification: str = "Focused tests pass.", handoff: str = "Review the release checklist.") -> str:
+    def _evidence_body(self, body: str, actual: str = "- Surface: Tests and tooling\n  State: changed\n  Detail: Focused lifecycle coverage was added.", verification: str = "Check: python -m unittest tests.test_lifecycle -v\nResult: passed — 10 lifecycle tests", handoff: str = "Current state: Lifecycle evidence is recorded.\nNext action: Review the release checklist.") -> str:
         body = body.replace("## Actual blast radius\n", f"## Actual blast radius\n\n{actual}\n")
         body = body.replace("## Verification evidence\n", f"## Verification evidence\n\n{verification}\n")
         return body.replace("## Handoff\n", f"## Handoff\n\n{handoff}\n")
@@ -62,7 +62,7 @@ class LifecycleTests(unittest.TestCase):
                 close_session(vault, session, "abc123")
 
             note = parse_note(session)
-            body = self._evidence_body(note.body, verification="All focused tests pass.")
+            body = self._evidence_body(note.body, verification="Check: python -m unittest tests.test_lifecycle -v\nResult: passed — 10 lifecycle tests")
             write_note(note.__class__(note.path, note.properties, body))
             close_session(vault, session, "abc123")
 
@@ -73,18 +73,18 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(owning.properties["latest_session"], f"[[{session.stem}]]")
             self.assertNotIn("current_session", owning.properties)
 
-    def test_close_rejects_placeholder_or_non_observable_evidence(self):
+    def test_close_rejects_unstructured_placeholder_and_non_observable_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory) / "docs"
             initialize_vault(vault, "Inventory", date(2026, 8, 27))
             workstream = self._workstream(vault)
             for index, (actual, verification, handoff) in enumerate((
-                ("-", "Focused tests pass.", "Review the checklist."),
-                ("Affected scanner parsing.", "TBD", "Review the checklist."),
-                ("Affected scanner parsing.", "not-run", "Review the checklist."),
-                ("Affected scanner parsing.", "Implementation looks good.", "Review the checklist."),
-                ("Affected scanner parsing.", "Manual check passed.", "{{HANDOFF}}"),
-                ("copied filler", "Result: tests pass.", "Review the checklist."),
+                ("hello world", "Check: focused test\nResult: passed — 1 check", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: TBD\nResult: passed — 1 check", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed content", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: {{DETAIL}}", "Check: focused test\nResult: passed — 1 check", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: NOT-RUN", "Current state: PLACEHOLDER\nNext action: review"),
+                ("- Surface:\n  State:\n  Detail:", "Check:\nResult:", "Current state:\nNext action:"),
             )):
                 session = open_session(vault, workstream, f"verify {index}", datetime(2026, 8, 27, 9, 30 + index), "agent-a")
                 note = parse_note(session)
@@ -148,7 +148,7 @@ class LifecycleTests(unittest.TestCase):
             workstream = self._workstream(vault)
             session = vault / "records" / "misplaced.md"
             session.parent.mkdir(exist_ok=True)
-            session.write_text("---\ntype: work-session\nstatus: active\nproject: '[[Home]]'\nworkstream: '[[Barcode Scanning]]'\n---\n# Misplaced\n\n## Actual blast radius\n\nAffected scanner parsing.\n\n## Verification evidence\n\nResult: focused tests pass.\n\n## Handoff\n\nReview the checklist.\n", encoding="utf-8")
+            session.write_text("---\ntype: work-session\nstatus: active\nproject: '[[Home]]'\nworkstream: '[[Barcode Scanning]]'\n---\n# Misplaced\n\n## Actual blast radius\n\n- Surface: Tests and tooling\n  State: changed\n  Detail: Scanner tests changed.\n\n## Verification evidence\n\nCheck: focused scanner tests\nResult: passed — 1 test\n\n## Handoff\n\nCurrent state: Evidence is ready.\nNext action: Review the checklist.\n", encoding="utf-8")
             with self.assertRaises(LifecycleStateError):
                 close_session(vault, session, None)
 
@@ -200,7 +200,7 @@ class LifecycleTests(unittest.TestCase):
 
             broken = vault / "workstreams/barcode-scanning/sessions/2026-08-27-0930-verify.md"
             broken.parent.mkdir(parents=True)
-            broken.write_text("---\ntype: work-session\nstatus: active\nproject: '[[Home]]'\nworkstream: '[[Missing]]'\n---\n# Broken\n\n## Actual blast radius\n\nAffected scanner parsing.\n\n## Verification evidence\n\nResult: focused tests pass.\n\n## Handoff\n\nReview the checklist.\n", encoding="utf-8")
+            broken.write_text("---\ntype: work-session\nstatus: active\nproject: '[[Home]]'\nworkstream: '[[Missing]]'\n---\n# Broken\n\n## Actual blast radius\n\n- Surface: Tests and tooling\n  State: changed\n  Detail: Scanner tests changed.\n\n## Verification evidence\n\nCheck: focused scanner tests\nResult: passed — 1 test\n\n## Handoff\n\nCurrent state: Evidence is ready.\nNext action: Review the checklist.\n", encoding="utf-8")
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["close-session", "--vault", str(vault), "--session", str(broken)]), 1)
 

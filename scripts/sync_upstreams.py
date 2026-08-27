@@ -81,10 +81,15 @@ def _atomic_write_json(path: Path, value: dict) -> None:
         json.dump(value, handle, indent=2, sort_keys=True)
         handle.write("\n")
         temporary_path = Path(handle.name)
-    os.replace(temporary_path, path)
+    try:
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
 
 
-def _replace_vendor(root: Path, staged_vendor: Path) -> None:
+def _replace_vendor(root: Path, staged_vendor: Path) -> Path:
+    """Install a staged vendor tree and retain its predecessor for rollback."""
     vendor = root / "vendor"
     backup = root / ".vendor-sync-backup"
     if backup.exists():
@@ -97,8 +102,16 @@ def _replace_vendor(root: Path, staged_vendor: Path) -> None:
         if backup.exists():
             os.replace(backup, vendor)
         raise
+    return backup
+
+
+def _restore_vendor(root: Path, backup: Path) -> None:
+    """Remove the newly installed vendor tree and restore its backup, if any."""
+    vendor = root / "vendor"
+    if vendor.exists():
+        shutil.rmtree(vendor)
     if backup.exists():
-        shutil.rmtree(backup)
+        os.replace(backup, vendor)
 
 
 def _run_git(arguments: list[str], cwd: Path | None = None) -> str:
@@ -174,8 +187,14 @@ def sync(selection_path: Path, root: Path, update: bool) -> dict:
             for path in changed:
                 print(f"  {path}")
 
-        _replace_vendor(root, staged_vendor)
-        _atomic_write_json(lock_path, lock)
+        backup = _replace_vendor(root, staged_vendor)
+        try:
+            _atomic_write_json(lock_path, lock)
+        except Exception:
+            _restore_vendor(root, backup)
+            raise
+        if backup.exists():
+            shutil.rmtree(backup)
     return lock
 
 

@@ -12,6 +12,7 @@ import sys
 from .context import find_context
 from .lifecycle import LifecycleStateError, close_session, open_daily_plan, open_session
 from .markdown import parse_note
+from .validation import validate_vault
 from .vault import initialize_vault
 
 
@@ -43,6 +44,32 @@ def _report_json(report: object) -> str:
             "git_branch": report.git_branch,
             "git_commit": report.git_commit,
             "warnings": list(report.warnings),
+        },
+        sort_keys=True,
+    )
+
+
+def _validation_json(report: object, vault: Path) -> str:
+    def finding_json(finding: object) -> dict[str, str]:
+        path = finding.path
+        try:
+            rendered_path = path.relative_to(vault).as_posix()
+        except ValueError:
+            rendered_path = path.as_posix()
+        return {
+            "code": finding.code,
+            "severity": finding.severity,
+            "path": rendered_path,
+            "message": finding.message,
+        }
+
+    return json.dumps(
+        {
+            "errors": len(report.errors),
+            "warnings": len(report.warnings),
+            "notices": len(report.notices),
+            "findings": len(report.findings),
+            "finding_details": [finding_json(finding) for finding in report.findings],
         },
         sort_keys=True,
     )
@@ -85,6 +112,10 @@ def build_parser() -> argparse.ArgumentParser:
     close.add_argument("--vault", type=Path, required=True)
     close.add_argument("--session", type=Path, required=True)
     close.add_argument("--end-commit")
+
+    validate = subcommands.add_parser("validate")
+    validate.add_argument("--vault", type=Path, required=True)
+    validate.add_argument("--json", action="store_true")
     return parser
 
 
@@ -109,6 +140,15 @@ def main(argv: list[str] | None = None) -> int:
             workstream = _linked_workstream(args.vault, args.session)
             if workstream is not None:
                 print(workstream)
+        elif args.command == "validate":
+            report = validate_vault(args.vault, date.today())
+            if args.json:
+                print(_validation_json(report, args.vault))
+            else:
+                for finding in report.findings:
+                    print(f"{finding.severity}: {finding.path}: {finding.code}: {finding.message}")
+                print(f"{len(report.errors)} errors, {len(report.warnings)} warnings, {len(report.notices)} notices")
+            return 1 if report.errors else 0
         return 0
     except LifecycleStateError as error:
         print(str(error), file=sys.stderr)

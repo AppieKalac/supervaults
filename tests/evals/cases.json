@@ -28,6 +28,7 @@
   },
   {
     "id": "barcode-established-extend", "prompt": "How about barcode scanning?", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "design", "expected_lifecycle_action": "extend",
+    "clarification_policy": {"mode": "first-unused-topic-match", "max_turns": 1, "on_unmatched": "stop-inconclusive", "topics": [{"id": "known-scan-action", "match_any": ["known barcode", "increase", "open item", "scan"], "user_response": "Increase the matching item's stock by one; retain manual count controls."}]},
     "gate_script": [{"gate": "design-approval", "agent_expectation": "Show the extension to the existing Inventory Application contract.", "user_response": "Approve barcode scanning as an extension."}, {"gate": "written-spec-approval", "agent_expectation": "Ask approval of the revised specification.", "user_response": "Approve the specification only; do not implement."}], "terminal_expectation": "Stop after updating the canonical Inventory Application contract and linked evidence.",
     "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
     "required_artifacts": [{"name": "canonical-workstream", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}}], "forbidden_artifacts": [{"name": "duplicate-workstream", "selector": {"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "absent"}}],

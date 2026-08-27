@@ -105,6 +105,20 @@ class EvaluationContractTests(unittest.TestCase):
         self.assertTrue({"form", "browser", "desktop", "command-line"}.issubset(set(form["match_any"])))
         self.assertIn("browser-based web app", form["user_response"])
 
+    def test_barcode_extension_has_deterministic_scan_behavior_reply(self):
+        case = next(case for case in self.cases if case["id"] == "barcode-established-extend")
+        policy = case.get("clarification_policy", {})
+        self.assertEqual(set(policy), CLARIFICATION_POLICY_KEYS)
+        self.assertEqual(policy["mode"], "first-unused-topic-match")
+        self.assertEqual(policy["max_turns"], 1)
+        self.assertEqual(policy["on_unmatched"], "stop-inconclusive")
+        self.assertEqual(len(policy["topics"]), 1)
+        topic = policy["topics"][0]
+        self.assertEqual(topic["id"], "known-scan-action")
+        self.assertTrue({"known barcode", "increase", "open item", "scan"}.issubset(set(topic["match_any"])))
+        self.assertIn("increase", topic["user_response"].lower())
+        self.assertIn("one", topic["user_response"].lower())
+
     def test_plan_today_resume_contract_distinguishes_note_creation(self):
         case = next(case for case in self.cases if case["id"] == "plan-established-daily-links")
         self.assertEqual(case["expected_lifecycle_action"], "resume")

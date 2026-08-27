@@ -247,10 +247,12 @@ opened
   → actual blast radius recorded
   → evidence recorded
   → handoff written
-  → archived
+  → closed
 ```
 
 A new agent or handed-off run creates a new session and links `previous_session`. During parallel work, each worker owns a unique session. The coordinator alone updates shared workstream and project overviews. Workers contribute proposed roll-ups containing actual changes, evidence, deviations, risks, recommended state transitions, and the exact next action.
+
+Closed sessions remain chronologically inside their workstream; they are not moved into a global session archive. When a completed workstream is archived, its entire directory moves under `workstreams/archive/` so its overview, sessions, and local context remain together.
 
 Sessions record meaningful change sets, not every edit or transient thought. A trivial typo, formatting-only change, or explanation does not require a session unless the user asks.
 
@@ -408,7 +410,7 @@ Record actual changed surfaces, exact checks, environment, version or commit, co
 
 ### Closure gate
 
-Write the handoff, reconcile the workstream, update `Home.md` only when project-level truth changed, and archive only after evidence and handoff are complete.
+Write the handoff, reconcile the workstream, update `Home.md` only when project-level truth changed, and close a session only after evidence and handoff are complete. Archive a completed workstream only as one intact directory.
 
 ### Delivery gate
 
@@ -429,7 +431,7 @@ A cross-platform, standard-library validator checks:
 - Required named relationships
 - Broken or ambiguous lifecycle links
 - Dangling `current_session` values
-- Archived sessions missing evidence or handoff
+- Closed sessions missing evidence or handoff
 - Completed workstreams without completion evidence
 - Open daily plans that were never reconciled
 - Delivery claims lacking environment or version evidence

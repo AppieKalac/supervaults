@@ -22,7 +22,22 @@ _SKIPPED_DIRECTORIES = frozenset({".git", ".obsidian", "vendor", "__pycache__"})
 _WIKI_LINK = re.compile(r"^\[\[([^\]|]+)(?:\|[^\]]+)?\]\]$")
 _DELIVERY_CLAIM = re.compile(r"\b(?:deployed|released|in production)\b", re.IGNORECASE)
 _NEGATED_DELIVERY_CLAIM = re.compile(r"\b(?:not|never|pending|planned|awaiting)\s+(?:deployed|released)\b", re.IGNORECASE)
+_UNRESOLVED_MARKER = re.compile(r"\{\{[^{}]+\}\}|<[^>\n]+>")
 _SEVERITY_ORDER = {"error": 0, "warning": 1, "notice": 2}
+_EXPECTED_LINK_TYPES = {
+    "project": "project",
+    "workstream": "workstream",
+    "spec": "specification",
+    "plan": "implementation-plan",
+    "current_session": "work-session",
+    "latest_session": "work-session",
+}
+_DELIVERY_PLACEHOLDERS = frozenset(
+    {"tbd", "todo", "placeholder", "unknown", "none", "n/a", "not applicable", "not-applicable"}
+)
+_DELIVERY_PLACEHOLDER_TEXT = re.compile(
+    r"\b(?:tbd|todo|placeholder|unknown|none|n/?a|not[ -]applicable)\b", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -73,6 +88,20 @@ def _substantive(value: str) -> bool:
     return bool(normalized and normalized not in {"tbd", "todo", "placeholder", "none", "n/a"})
 
 
+def _substantive_identifier(value: object) -> bool:
+    """Accept delivery metadata only when it is concrete rather than template filler."""
+
+    if not isinstance(value, str):
+        return False
+    normalized = " ".join(value.split())
+    return bool(
+        normalized
+        and normalized.casefold() not in _DELIVERY_PLACEHOLDERS
+        and not _DELIVERY_PLACEHOLDER_TEXT.search(normalized)
+        and not _UNRESOLVED_MARKER.search(normalized)
+    )
+
+
 def _link_values(value: object) -> tuple[str, ...] | None:
     values = value if isinstance(value, list) else [value]
     targets: list[str] = []
@@ -109,6 +138,22 @@ def _resolve_link(target: str, by_stem: dict[str, list[Path]], by_relative: dict
 
 def _add(findings: list[Finding], code: str, severity: str, path: Path, message: str) -> None:
     findings.append(Finding(code, severity, path, message))
+
+
+def _session_is_owned_by(
+    session: Note,
+    workstream: Note,
+    by_stem: dict[str, list[Path]],
+    by_relative: dict[str, list[Path]],
+) -> bool:
+    """Require both the named owner and the retained local sessions directory."""
+
+    named_owner = _resolved_single_link(session, "workstream", by_stem, by_relative)
+    return (
+        named_owner == workstream.path
+        and session.path.parent.name == "sessions"
+        and session.path.parent.parent == workstream.path.parent
+    )
 
 
 def _validate_metadata(note: Note, findings: list[Finding]) -> None:
@@ -167,10 +212,23 @@ def _validate_links(
             if len(matches) > 1:
                 _add(findings, "ambiguous-wiki-link", "error", note.path, f"{field} target [[{target}]] is ambiguous")
                 continue
-            if field == "spec" and notes_by_path[matches[0]].properties.get("type") != "specification":
-                _add(findings, "broken-contract-link", "error", note.path, f"spec target [[{target}]] is not a specification")
-            if field == "plan" and notes_by_path[matches[0]].properties.get("type") != "implementation-plan":
-                _add(findings, "broken-contract-link", "error", note.path, f"plan target [[{target}]] is not an implementation plan")
+            target_note = notes_by_path[matches[0]]
+            expected_type = _EXPECTED_LINK_TYPES.get(field)
+            if expected_type is not None and target_note.properties.get("type") != expected_type:
+                code = "broken-contract-link" if field in {"spec", "plan"} else "invalid-relationship-target"
+                _add(findings, code, "error", note.path, f"{field} target [[{target}]] must be a {expected_type}")
+                continue
+            if field == "workstream" and note.properties.get("type") == "work-session":
+                if not _session_is_owned_by(note, target_note, by_stem, by_relative):
+                    _add(findings, "session-workstream-ownership", "error", note.path, "workstream link must name the workstream that contains this session")
+            if field in {"current_session", "latest_session"}:
+                if not _session_is_owned_by(target_note, note, by_stem, by_relative):
+                    _add(findings, "session-workstream-ownership", "error", note.path, f"{field} must name a session physically owned by this workstream")
+                expected_statuses = {"active", "blocked"} if field == "current_session" else {"verified", "complete"}
+                if target_note.properties.get("status") not in expected_statuses:
+                    code = "invalid-current-session-state" if field == "current_session" else "invalid-latest-session-state"
+                    states = "/".join(sorted(expected_statuses))
+                    _add(findings, code, "error", note.path, f"{field} must reference a {states} work session")
 
 
 def _validate_closed_session(note: Note, findings: list[Finding]) -> None:
@@ -223,17 +281,20 @@ def _validate_workstream_evidence(
         latest_note
         and latest_note.properties.get("type") == "work-session"
         and latest_note.properties.get("status") in {"verified", "complete"}
+        and _session_is_owned_by(latest_note, note, by_stem, by_relative)
         and _has_valid_verification_evidence(_section(latest_note.body, "Verification evidence"))
     )
     if not _substantive(_section(note.body, "Completed")) or not session_is_evidenced:
-        _add(findings, "missing-completion-evidence", "error", note.path, "complete workstream needs a completed summary and evidenced latest session")
+        code = "completion-evidence-ownership" if latest_note is not None and not _session_is_owned_by(latest_note, note, by_stem, by_relative) else "missing-completion-evidence"
+        _add(findings, code, "error", note.path, "complete workstream needs a completed summary and evidenced latest session it owns")
 
 
 def _delivery_has_evidence(note: Note) -> bool:
     environment = note.properties.get("environments")
-    has_environment = bool(environment if isinstance(environment, list) else isinstance(environment, str) and environment.strip())
+    environment_values = environment if isinstance(environment, list) else [environment]
+    has_environment = any(_substantive_identifier(value) for value in environment_values)
     version_fields = ("version", "release_version", "deployment_version", "end_commit")
-    has_version = any(isinstance(note.properties.get(field), str) and note.properties[field].strip() for field in version_fields)
+    has_version = any(_substantive_identifier(note.properties.get(field)) for field in version_fields)
     return has_environment and has_version
 
 

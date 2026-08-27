@@ -1,0 +1,3 @@
+interface:
+  display_name: "Supervaults"
+  short_description: "Run development through linked, multi-session project vaults"

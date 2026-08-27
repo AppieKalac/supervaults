@@ -37,7 +37,10 @@ ORACLE_KINDS = {
 }
 GATES = {"clarification", "design-approval", "written-spec-approval", "execution-choice", "expected-stop"}
 MUTATION_DOMAINS = {"product_source_tree", "vault", "external"}
-CLARIFICATION_POLICY_KEYS = {"mode", "max_turns", "on_unmatched", "topics"}
+TOPIC_POLICY_KEYS = {"mode", "max_turns", "on_unmatched", "topics"}
+PACKET_POLICY_KEYS = {
+    "mode", "max_turns", "on_unmatched", "constraint_packet", "fallback_response",
+}
 CANONICAL_RECORD_ROOTS = (
     "docs/records/investigations", "docs/records/reviews", "docs/records/releases",
 )
@@ -87,7 +90,7 @@ class EvaluationContractTests(unittest.TestCase):
     def test_empty_project_design_has_deterministic_multi_question_policy(self):
         case = next(case for case in self.cases if case["id"] == "inventory-empty-design")
         policy = case.get("clarification_policy", {})
-        self.assertEqual(set(policy), CLARIFICATION_POLICY_KEYS)
+        self.assertEqual(set(policy), TOPIC_POLICY_KEYS)
         self.assertEqual(policy["mode"], "first-unused-topic-match")
         self.assertGreaterEqual(policy["max_turns"], 6)
         self.assertEqual(policy["on_unmatched"], "stop-inconclusive")
@@ -105,33 +108,44 @@ class EvaluationContractTests(unittest.TestCase):
         self.assertTrue({"form", "browser", "desktop", "command-line"}.issubset(set(form["match_any"])))
         self.assertIn("browser-based web app", form["user_response"])
 
-    def test_barcode_extension_has_deterministic_scan_behavior_reply(self):
+    def test_barcode_extension_uses_one_complete_packet_and_a_bounded_fallback(self):
         case = next(case for case in self.cases if case["id"] == "barcode-established-extend")
         policy = case.get("clarification_policy", {})
-        self.assertEqual(set(policy), CLARIFICATION_POLICY_KEYS)
-        self.assertEqual(policy["mode"], "first-unused-topic-match")
-        self.assertEqual(policy["max_turns"], 4)
-        self.assertEqual(policy["on_unmatched"], "stop-inconclusive")
-        topics = {topic["id"]: topic for topic in policy["topics"]}
+        self.assertEqual(set(policy), PACKET_POLICY_KEYS)
+        self.assertEqual(policy["mode"], "constraint-packet-then-fallback")
+        self.assertEqual(policy["max_turns"], 2)
+        self.assertEqual(policy["on_unmatched"], "use-fallback-then-stop-at-limit")
+        clauses = {clause["id"]: clause["user_response"] for clause in policy["constraint_packet"]}
         self.assertEqual(
-            set(topics),
-            {"known-scan-action", "barcode-assignment", "duplicate-invalid-scan", "device-input-form"},
+            set(clauses),
+            {
+                "known-scan-action", "unknown-scan-assignment", "error-handling",
+                "input-modes", "editing-boundary", "manual-controls", "contract-stability",
+            },
         )
-        expected_matches = {
-            "known-scan-action": {"known barcode", "increase", "open item", "scan"},
-            "barcode-assignment": {"assign", "adding items", "optional barcode", "require barcode"},
-            "duplicate-invalid-scan": {"unknown", "unmatched", "duplicate", "invalid"},
-            "device-input-form": {"camera", "handheld", "manual", "device"},
-        }
-        for topic_id, matches in expected_matches.items():
-            with self.subTest(topic=topic_id):
-                self.assertTrue(matches.issubset(set(topics[topic_id]["match_any"])))
-                self.assertTrue(topics[topic_id]["user_response"].strip())
-        self.assertIn("increase", topics["known-scan-action"]["user_response"].lower())
-        self.assertIn("one", topics["known-scan-action"]["user_response"].lower())
-        self.assertIn("optional", topics["barcode-assignment"]["user_response"].lower())
-        self.assertIn("reject", topics["duplicate-invalid-scan"]["user_response"].lower())
-        self.assertIn("manual", topics["device-input-form"]["user_response"].lower())
+        self.assertIn("exactly one", clauses["known-scan-action"].lower())
+        self.assertIn("existing item", clauses["unknown-scan-assignment"].lower())
+        for term in ("duplicate", "invalid", "unmatched"):
+            self.assertIn(term, clauses["error-handling"].lower())
+        for term in ("browser", "keyboard-wedge", "manual"):
+            self.assertIn(term, clauses["input-modes"].lower())
+        self.assertIn("never renames", clauses["editing-boundary"].lower())
+        self.assertIn("manual stock controls remain", clauses["manual-controls"].lower())
+        self.assertIn("otherwise unchanged", clauses["contract-stability"].lower())
+
+        fallback = policy["fallback_response"].lower()
+        self.assertIn("existing approved behavior", fallback)
+        self.assertIn("simplest browser-local option", fallback)
+        self.assertIn("state the assumption", fallback)
+        self.assertIn("do not add", fallback)
+
+    def test_barcode_fallback_is_wording_independent_and_cannot_grow_topic_by_topic(self):
+        case = next(case for case in self.cases if case["id"] == "barcode-established-extend")
+        policy = case["clarification_policy"]
+        serialized = _serialized(policy)
+        self.assertNotIn("match_any", serialized)
+        self.assertNotIn("topics", serialized)
+        self.assertLessEqual(policy["max_turns"], 2)
 
     def test_plan_today_resume_contract_distinguishes_note_creation(self):
         case = next(case for case in self.cases if case["id"] == "plan-established-daily-links")

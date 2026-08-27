@@ -5,6 +5,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
+from tests.evals.protocol import clarification_response
 from tests.evals.setup_fixture import create_fixture, load_fixture
 from tests.evals.scoring import copied_plan_blocks, score_no_copy
 
@@ -146,6 +147,36 @@ class EvaluationContractTests(unittest.TestCase):
         self.assertNotIn("match_any", serialized)
         self.assertNotIn("topics", serialized)
         self.assertLessEqual(policy["max_turns"], 2)
+
+    def test_exports_extension_sends_a_complete_wording_independent_constraint_packet(self):
+        case = next(case for case in self.cases if case["id"] == "exports-established-extend")
+        policy = case["clarification_policy"]
+
+        first = clarification_response(policy, 0, "Which fields belong in the file?")
+        differently_worded = clarification_response(policy, 0, "Surprise me with a format decision.")
+
+        self.assertEqual(first, differently_worded)
+        self.assertIsNotNone(first)
+        for phrase in (
+            "CSV", "name", "count", "barcode", "one header row", "all inventory",
+            "browser-local download", "item name", "no external service", "otherwise unchanged",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase.casefold(), first.casefold())
+
+    def test_exports_extension_uses_one_fallback_then_exhausts_at_the_fixed_limit(self):
+        case = next(case for case in self.cases if case["id"] == "exports-established-extend")
+        policy = case["clarification_policy"]
+
+        fallback = clarification_response(policy, 1, "What about an unspecified edge case?")
+
+        self.assertEqual(fallback, policy["fallback_response"])
+        self.assertIn("retain every existing approved behavior", fallback.casefold())
+        self.assertIn("simplest browser-local", fallback.casefold())
+        self.assertIn("document the assumption", fallback.casefold())
+        self.assertIsNone(clarification_response(policy, 2, "Can we add one more behavior?"))
+        self.assertEqual(policy["max_turns"], 2)
+        self.assertEqual(policy["on_unmatched"], "use-fallback-then-stop-at-limit")
 
     def test_plan_today_resume_contract_distinguishes_note_creation(self):
         case = next(case for case in self.cases if case["id"] == "plan-established-daily-links")

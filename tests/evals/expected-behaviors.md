@@ -43,7 +43,7 @@ Every broad prompt has one empty and one established fixture. Follow its complet
 |---|---|---|
 | Create a small inventory application. | `inventory-empty-design`: approved linked specification, then stop. | `inventory-established-new-outcome`: distinct approved mobile-app specification, then stop. |
 | How about barcode scanning? | `barcode-empty-capture`: proposed idea only. | `barcode-established-extend`: extended canonical contract, no implementation. Its first clarification receives the complete checked-in barcode constraint packet; at most one later clarification receives the conservative browser-local fallback before the evaluator stops. |
-| Let's add exports. | `exports-empty-capture`: proposed idea only. | `exports-established-extend`: extended canonical contract, no duplicate owner. |
+| Let's add exports. | `exports-empty-capture`: proposed idea only. | `exports-established-extend`: extended canonical contract, no duplicate owner. Its first clarification receives the complete CSV constraint packet; at most one later clarification receives the conservative browser-local fallback before the evaluator stops. |
 | Continue where we stopped. | `continue-empty-orient`: response-only missing-handoff gap. | `continue-established-resume`: linked successor evidence session after the approved focused check. |
 | What happened with authentication? | `auth-empty-investigate`: response-only absent-history gap. | `auth-established-investigate-read-only`: response-only reconstruction, no durable record. |
 | Plan today. | `plan-empty-daily`: dated discovery daily plan only. | `plan-established-daily-links`: dated plan linked to Inventory Application. |

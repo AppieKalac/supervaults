@@ -1,49 +1,68 @@
-# Supervaults behavioral evaluation expectations
+# Supervaults behavioral evaluation contract
 
-`cases.json` is the machine-readable source of truth. This file explains how a human evaluator should interpret its observable oracles. The JSON files are **not** an LLM runner: they define prompts, fixture contexts, and pass/fail assertions for a clean-agent run that is performed separately.
+Task 8 defines and validates this deterministic behavioral contract. It does **not** execute an LLM or an installed clean agent. Task 9 owns installed live clean-agent execution against these fixtures.
 
-## Oracle vocabulary
+`cases.json` is the machine-readable source of truth. Each case fixes one fixture, one `expected_lifecycle_action`, a run-date policy, an approval/stop dialogue, a terminal expectation, mutation domains, and observable selectors. A plausible explanation or private reasoning is never evidence.
 
-Each `must` or `must_not` object has a `kind` and an `assertion`. Score only the files, frontmatter, named links, status values, Git evidence, validator/test output, or externally observable mutation named by that object. Do not infer a pass from a plausible explanation or hidden reasoning.
+## Fixture and date resolution
 
-| Kind | Inspect |
+The setup helper expands `{{RUN_DATE}}`, `{{PREVIOUS_DATE}}`, and `{{RUN_DATETIME}}` in fixture files. During a live run, choose the actual local run date and use that same date for setup, case-token resolution, vault operations, and validation. Do not substitute the former development date or score literal token text.
+
+| Fixture | Deterministic state |
 |---|---|
-| `file` | Presence, absence, or changed state at the supplied repository-relative path |
-| `link` | A named Markdown/wiki relationship from the stated source to target |
-| `property` / `status` | Parsed YAML frontmatter or an explicit lifecycle status transition |
-| `validator` / `test` | Fresh command output and exit status retained with the run |
-| `git` | `git status`, `git diff`, commit IDs, and session evidence that names them |
-| `external-mutation` | Deployment/forge/tracker audit evidence; `no-event` means no observed write |
-| `evidence-gap` | An explicit note of unavailable required evidence, connector, or prior state |
+| `empty-project` | One committed `.gitignore`; no `docs/` tree, vault, source, or prior handoff. |
+| `established-multi-session` | Two fixed commits, a valid project vault, active Inventory Application and Authentication workstreams, linked verified sessions, an approved Inventory specification, canonical `docs/records/` directories, and stable source files. |
 
-## Broad-prompt matrix
+## Scoring selectors
 
-Every broad prompt has both an empty and established multi-session fixture. The empty fixture proves the agent does not invent continuity. The established fixture proves it can reuse evidence and canonical ownership.
+Resolve tokens before scoring. Each required artifact embeds its concrete selector; that exact selector also appears in `must`. Each forbidden artifact likewise appears in `must_not`.
 
-| Prompt | Empty case | Established case | Observable distinction |
-|---|---|---|---|
-| Create a small inventory application. | `inventory-empty-design` | `inventory-established-new-outcome` | Creates a bounded contract only after vault setup; established context still creates a distinct owner only after preinspection rules out reuse. |
-| How about barcode scanning? | `barcode-empty-capture` | `barcode-established-extend` | Captures an uncommitted possibility when context is absent; extends the canonical Inventory Application owner when the contract permits it. |
-| Let's add exports. | `exports-empty-capture` | `exports-established-extend` | Does not turn a vague suggestion into implementation; uses a named existing contract link when it is an in-scope extension. |
-| Continue where we stopped. | `continue-empty-orient` | `continue-established-resume` | Reports missing continuity without mutation; opens a linked successor session from an exact existing handoff. |
-| What happened with authentication? | `auth-empty-investigate` | `auth-established-investigate-read-only` | Reports the evidence gap or reconstructs linked history without source changes, commits, or external writes. |
-| Plan today. | `plan-empty-daily` | `plan-established-daily-links` | Creates/reuses a retained daily plan; established plan links selected owners rather than copying engineering tasks or promoting inbox items. |
-| Consolidate recent work. | `consolidate-empty-no-invention` | `consolidate-established-small-corrections` | Makes no invented work on an empty repository; fixes only vault drift and promotes verified durable truth. |
-| Ship it to staging. | `staging-empty-evidence-gap` | `staging-established-authorized-only` | Missing prerequisites yields an evidence gap; explicit staging authorization permits only a staging event and evidence record. |
+| Selector kind | Mechanical/manual scoring method |
+|---|---|
+| `file` | Compare before/after file inventory. `exists`, `absent`, `updated`, and `unchanged` apply to the path or glob shown. |
+| `property` / `status` | Parse flat YAML frontmatter and compare the named property or lifecycle value. |
+| `link` | Parse Markdown/wiki links and verify the named source-to-target relation after token resolution. |
+| `validator` / `test` | Run the exact command fresh; retain command, stdout, stderr, and exit code. |
+| `git` | Compare `git status --short`, `git diff --name-only`, and commit/history evidence against the stated assertion. |
+| `response` / `evidence-gap` | Save the final agent response; it must name the required finding or unavailable evidence without fabricating a result. |
+| `external-mutation` | Compare an evaluator-owned deployment/forge audit log. `no-event` means no observed write; `one-authorized-event` must exactly match the case authorization. |
+| `no-copy` | Confirm the canonical implementation plan exists only at `canonical_path`; scan workstream, daily, and work-session notes under `forbidden_paths` for every `forbidden_heading` and `forbidden_phrase`. Any match fails. |
 
-## Boundary cases
+Mutation domains are scored separately from artifact output:
 
-| Case | Required observable result | Required absence |
+- `product_source_tree: unchanged` means no source-tree path changes; it does not prohibit the explicitly permitted vault evidence.
+- `vault: unchanged` means no vault path changes; these cases require response-only results.
+- `vault: evidence-only` permits only the records/session/link changes named by `must`; `may-change` permits the bounded creation described by the case.
+- `external: none` forbids every external write; `deployment:staging` permits only the exact staging event named by the case.
+
+## Broad-prompt terminal matrix
+
+Every broad prompt has one empty and one established fixture. Follow its complete `gate_script` in order, including each user response, then score its exact `terminal_expectation`.
+
+| Prompt | Empty case terminal | Established case terminal |
 |---|---|---|
-| `superpowers-contract-linking` | One plan at `docs/superpowers/plans/` and a named `plan` link from the owner. | No copied plan below the workstream or alternate plans tree. |
-| `authoritative-workstream-reuse` | Existing Inventory Application note updated with a new owned session and preinspection evidence. | No Barcode Import workstream. |
-| `minor-debugging-stays-session` | Reproduction/root-cause evidence stays in the session and source remains unchanged. | No promoted investigation, decision, or knowledge record. |
-| `reusable-root-cause-promotion` | A complete investigation links its source sessions and captures the reusable root cause. | No source mutation or implementation plan. |
-| `read-only-review` | Findings/dispositions with provenance and reported checks. | No code mutation, commit, merge, or forge comment. |
-| `consolidation-small-scope` | Only named link/metadata repairs and a passing validator. | No product source mutation, design, or plan. |
-| `optional-connector-evidence-gap` | Explicit missing deployment-observation evidence and no lifecycle advancement to observed. | No invented deployment query/success claim. |
-| `staging-is-not-production` | One staging deployment event, release environment evidence, version/commit, and rollback reference. | Production event or production deployment status. |
+| Create a small inventory application. | `inventory-empty-design`: approved linked specification, then stop. | `inventory-established-new-outcome`: distinct approved mobile-app specification, then stop. |
+| How about barcode scanning? | `barcode-empty-capture`: proposed idea only. | `barcode-established-extend`: extended canonical contract, no implementation. |
+| Let's add exports. | `exports-empty-capture`: proposed idea only. | `exports-established-extend`: extended canonical contract, no duplicate owner. |
+| Continue where we stopped. | `continue-empty-orient`: response-only missing-handoff gap. | `continue-established-resume`: linked successor evidence session after the approved focused check. |
+| What happened with authentication? | `auth-empty-investigate`: response-only absent-history gap. | `auth-established-investigate-read-only`: response-only reconstruction, no durable record. |
+| Plan today. | `plan-empty-daily`: dated discovery daily plan only. | `plan-established-daily-links`: dated plan linked to Inventory Application. |
+| Consolidate recent work. | `consolidate-empty-no-invention`: response-only no-work gap. | `consolidate-established-small-corrections`: named vault correction and knowledge record only. |
+| Ship it to staging. | `staging-empty-evidence-gap`: response-only missing-precondition gap. | `staging-established-authorized-only`: one staging record/event, no production. |
 
-## Scoring rule
+## Conflict boundaries
 
-Mark a case pass only when every `must` oracle is observed and every `must_not` oracle remains absent. Mark it fail for an unsupported state transition, duplicate owner, copied contract, unauthorized external write, fabricated connector result, or any failed required command. Mark it inconclusive only when the fixture or audit source is unavailable; preserve that as a run-level evidence gap rather than converting it to a pass.
+| Case | Contract boundary |
+|---|---|
+| `superpowers-contract-linking` | A canonical plan is linked from the workstream; `no-copy` scans workstreams, daily notes, and work sessions for copied task headings/prose. |
+| `authoritative-workstream-reuse` | The preinspected Inventory Application owner is extended; Barcode Import cannot be created. |
+| `minor-debugging-stays-session` | The local root cause stays in named session evidence; no promoted `docs/records/investigations/` note. |
+| `reusable-root-cause-promotion` | A reusable root cause is promoted to `docs/records/investigations/` with source-session provenance. |
+| `read-only-review` | Findings are response-only; product source, vault, forge, and `docs/records/reviews/` are unchanged. |
+| `consolidation-small-scope` | Only named vault link corrections occur; source, design, plans, and new sessions are excluded. |
+| `optional-connector-evidence-gap` | Missing deployment access produces an explicit response gap, never an observed/released claim. |
+| `staging-is-not-production` | One staging deployment is authorized; production audit events and production claims fail the case. |
+
+## Pass/fail rule
+
+Pass only when all `must` selectors match, all `must_not` selectors remain true, the scripted gates and terminal expectation were followed, and all mutation domains match. A missing fixture/audit source is inconclusive only when the case itself permits an evidence gap; fabricated state, a copied plan, an unsupported lifecycle action, or an unauthorized external write is a failure.

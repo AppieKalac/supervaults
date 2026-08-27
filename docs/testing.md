@@ -3,7 +3,7 @@
 Supervaults has two different kinds of evaluation:
 
 - Automated contract and regression checks verify the plugin, Markdown schema, helper behavior, vendored integrity, and that the behavioral-case data is well formed.
-- Live clean-agent evaluations use the prompts in `tests/evals/cases.json` against controlled repository fixtures and are scored from observable artifacts. The JSON cases do **not** automatically run an LLM or an agent.
+- Task 8 defines and validates a deterministic contract for live clean-agent evaluations: the prompts, fixtures, gate dialogue, selectors, and manual scoring. The JSON cases do **not** automatically run an LLM or an agent. Task 9 owns installed live clean-agent execution.
 
 Run both before a release candidate. A passing automated suite does not prove a live agent followed every lifecycle boundary.
 
@@ -27,7 +27,7 @@ If `py` is unavailable on Windows, replace it with the installed Python 3 comman
 
 ## Automated checks
 
-The focused evaluation-contract test is fast and verifies that each broad prompt has both fixture contexts, every case uses an allowed mode and lifecycle constraint, and all conflict boundaries have dedicated cases.
+The focused evaluation-contract test is fast and verifies that each broad prompt has both fixture contexts, every case has one exact lifecycle action, deterministic gates and terminal expectations, concrete selector coverage, mutation domains, and dedicated conflict boundaries.
 
 ```text
 python -m unittest tests.test_eval_contract -v
@@ -39,13 +39,20 @@ The first command works wherever `python` resolves to Python 3; use the platform
 
 ## Live clean-agent protocol
 
-1. Create a disposable Git repository for each fixture. Copy only the fixture inputs described by the selected `scenario` in `tests/evals/cases.json`; do not pre-create the expected result. Use a distinct workspace for every agent/case pair.
+1. Allocate one empty disposable destination for each agent/case pair. The setup helper creates the selected case fixture; do not pre-create expected output or add unlisted history.
 2. Capture a baseline before the prompt: recursive vault file list, parsed Markdown frontmatter/link inventory, `git status --short`, `git log -1 --oneline`, and any available deployment/forge audit snapshot. Save them under an evaluator-owned `artifacts/before/` directory outside the fixture repository.
 3. Record environment metadata before dispatch: Supervaults plugin version from `.codex-plugin/plugin.json`, upstream commits from `upstream-lock.json`, agent identifier and model, repository commit/branch, operating system and Python version, date/time, fixture ID, and the exact prompt text.
-4. Give the clean agent exactly one case prompt. Do not add hints, explain the expected lifecycle route, or authorize an external action unless the case's `authorization.external_write` says to. For a staging case, say the authorization verbatim and preserve the deployment audit log. Never reinterpret staging authorization as production authorization.
-5. Let the agent complete its normal workflow. For a follow-up scenario, begin a new fresh agent turn only after taking a new snapshot and preserve the previous session/handoff as fixture evidence.
-6. Capture an after snapshot with the same file, frontmatter/link, Git, and external-audit commands. Run the case's listed validator and project test commands fresh, retaining stdout, stderr, exit code, and command line.
-7. Score the case manually using `tests/evals/expected-behaviors.md` and the `must`/`must_not` objects. Inspect only observable evidence; never score private reasoning, claimed tool use, or an explanation that lacks the named file/link/property/status/Git/command/external evidence.
+4. Create the fixture with the supplied run date. The run date must be the actual local run date so the vault validator and `{{RUN_DATE}}` selector resolution agree:
+
+   ```text
+   python tests/evals/setup_fixture.py --fixture established-multi-session --destination <disposable-project> --date YYYY-MM-DD
+   ```
+
+   On Windows use `py -3` if `python` is not Python 3; on macOS/Linux use `python3` if needed. The helper is standard-library only and creates deterministic commits.
+5. Give the clean agent exactly the prompt and then each `gate_script` response in order. Do not add hints or skip a Superpowers approval gate. An `expected-stop` response is an explicit instruction to stop; a staging authorization is verbatim and never authorizes production.
+6. Let the agent complete the case's `terminal_expectation`. For a follow-up scenario, begin a new fresh agent turn only after taking a new snapshot and preserve the previous session/handoff as fixture evidence.
+7. Capture an after snapshot with the same file, frontmatter/link, Git, and external-audit commands. Run the case's listed validator and project test commands fresh, retaining stdout, stderr, exit code, and command line.
+8. Score the case manually using `tests/evals/expected-behaviors.md` and the `must`/`must_not` objects. Resolve `{{RUN_DATE}}`, `{{PREVIOUS_DATE}}`, and `{{RUN_DATETIME}}` first; inspect only observable evidence and the declared mutation domains.
 
 Run prompts in a separate fixture for every case. For the eight broad prompts, run the empty-project case first and the established-multi-session case second; the established fixture must contain only the history described by its scenario. Do not carry a prior agent's conversational context into a fresh-agent run.
 

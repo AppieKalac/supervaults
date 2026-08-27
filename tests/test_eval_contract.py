@@ -1,10 +1,16 @@
 import json
+import subprocess
+import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
+
+from tests.evals.setup_fixture import create_fixture, load_fixture
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES_PATH = ROOT / "tests/evals/cases.json"
+FIXTURE_DIR = ROOT / "tests/evals/fixtures"
 
 REQUIRED_PROMPTS = {
     "Create a small inventory application.",
@@ -18,27 +24,23 @@ REQUIRED_PROMPTS = {
 }
 CONTEXTS = {"empty-project", "established-multi-session"}
 MODES = {
-    "orient",
-    "plan",
-    "investigate",
-    "design",
-    "implement",
-    "review",
-    "consolidate",
-    "deliver",
-    "capture",
+    "orient", "plan", "investigate", "design", "implement", "review", "consolidate", "deliver", "capture",
+}
+LIFECYCLE_ACTIONS = {
+    "resume", "extend", "promote", "implement", "supersede", "merge", "create-new", "reference-only",
 }
 ORACLE_KINDS = {
-    "file",
-    "link",
-    "property",
-    "status",
-    "validator",
-    "test",
-    "git",
-    "external-mutation",
-    "evidence-gap",
+    "file", "link", "property", "status", "validator", "test", "git", "external-mutation", "evidence-gap", "response", "no-copy",
 }
+GATES = {"clarification", "design-approval", "written-spec-approval", "execution-choice", "expected-stop"}
+MUTATION_DOMAINS = {"product_source_tree", "vault", "external"}
+CANONICAL_RECORD_ROOTS = (
+    "docs/records/investigations", "docs/records/reviews", "docs/records/releases",
+)
+
+
+def _serialized(value: object) -> str:
+    return json.dumps(value, sort_keys=True)
 
 
 class EvaluationContractTests(unittest.TestCase):
@@ -54,7 +56,7 @@ class EvaluationContractTests(unittest.TestCase):
                 contexts = {case["context"] for case in self.cases if case["prompt"] == prompt}
                 self.assertEqual(contexts, CONTEXTS)
 
-    def test_each_case_has_machine_readable_observable_oracles(self):
+    def test_cases_have_deterministic_fixture_action_gates_and_terminal(self):
         self.assertTrue(self.cases)
         identifiers = set()
         for case in self.cases:
@@ -64,60 +66,101 @@ class EvaluationContractTests(unittest.TestCase):
                 identifiers.add(case["id"])
                 self.assertIn(case.get("context"), CONTEXTS)
                 self.assertIn(case.get("mode"), MODES)
-                self.assertTrue(case.get("lifecycle", {}).get("allowed"))
-                self.assertTrue(case["lifecycle"].get("forbidden"))
-                self.assertTrue(case.get("required_artifacts"))
-                self.assertTrue(case.get("forbidden_artifacts"))
-                self.assertIn("external_write", case.get("authorization", {}))
+                self.assertIn(case.get("expected_lifecycle_action"), LIFECYCLE_ACTIONS)
+                self.assertNotIn("lifecycle", case)
+                self.assertEqual(case.get("date_mode"), "run-date")
+                fixture_name = case.get("fixture")
+                self.assertIsInstance(fixture_name, str)
+                self.assertTrue((FIXTURE_DIR / f"{fixture_name}.json").is_file())
+                self.assertEqual(load_fixture(fixture_name)["context"], case["context"])
+                self.assertTrue(case.get("gate_script"))
+                for step in case["gate_script"]:
+                    self.assertIn(step.get("gate"), GATES)
+                    self.assertTrue(step.get("agent_expectation", "").strip())
+                    self.assertTrue(step.get("user_response", "").strip())
+                self.assertTrue(case.get("terminal_expectation", "").strip())
+
+    def test_cases_use_concrete_selectors_and_observable_artifact_coverage(self):
+        for case in self.cases:
+            with self.subTest(case=case["id"]):
+                self.assertIsInstance(case.get("required_artifacts"), list)
+                self.assertIsInstance(case.get("forbidden_artifacts"), list)
                 self.assertTrue(case.get("must"))
                 self.assertTrue(case.get("must_not"))
+                must_serialized = {_serialized(oracle) for oracle in case["must"]}
+                must_not_serialized = {_serialized(oracle) for oracle in case["must_not"]}
+                for artifact in case["required_artifacts"]:
+                    self.assertIsInstance(artifact.get("name"), str)
+                    self.assertIn(_serialized(artifact.get("selector")), must_serialized)
+                for artifact in case["forbidden_artifacts"]:
+                    self.assertIsInstance(artifact.get("name"), str)
+                    self.assertIn(_serialized(artifact.get("selector")), must_not_serialized)
                 for oracle in [*case["must"], *case["must_not"]]:
                     self.assertIn(oracle.get("kind"), ORACLE_KINDS)
                     self.assertIsInstance(oracle.get("assertion"), str)
                     self.assertTrue(oracle["assertion"].strip())
                     self.assertNotIn("reasoning", oracle)
+                    self.assertNotIn("2026" + "-08-27", _serialized(oracle))
+                self.assertEqual(set(case.get("mutation_domains", {})), MUTATION_DOMAINS)
+                self.assertIn(case["mutation_domains"]["product_source_tree"], {"unchanged", "may-change", "not-applicable"})
+                self.assertIn(case["mutation_domains"]["vault"], {"unchanged", "evidence-only", "may-change"})
+                self.assertIn(case["mutation_domains"]["external"], {"none", "deployment:staging"})
 
-    def test_conflict_boundaries_have_dedicated_cases(self):
-        by_id = {case["id"]: case for case in self.cases}
-        required = {
-            "superpowers-contract-linking",
-            "authoritative-workstream-reuse",
-            "minor-debugging-stays-session",
-            "reusable-root-cause-promotion",
-            "read-only-review",
-            "consolidation-small-scope",
-            "optional-connector-evidence-gap",
-            "staging-is-not-production",
-        }
-        self.assertTrue(required.issubset(by_id))
+    def test_canonical_records_and_strong_plan_copy_protection(self):
+        corpus = _serialized(self.cases)
+        for legacy_directory in ("investigations", "reviews", "releases"):
+            self.assertNotIn(f"docs/{legacy_directory}", corpus)
+        for root in CANONICAL_RECORD_ROOTS:
+            self.assertIn(root, corpus)
 
-        contract = by_id["superpowers-contract-linking"]
-        self.assertIn("link", {oracle["kind"] for oracle in contract["must"]})
-        self.assertIn("file", {oracle["kind"] for oracle in contract["must_not"]})
+        contract = next(case for case in self.cases if case["id"] == "superpowers-contract-linking")
+        canonical = "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md"
+        self.assertIn(canonical, _serialized(contract["must"]))
+        protections = [oracle for oracle in contract["must_not"] if oracle["kind"] == "no-copy"]
+        self.assertEqual(len(protections), 1)
+        protection = protections[0]
+        self.assertEqual(protection["canonical_path"], canonical)
+        self.assertEqual(protection["forbidden_paths"], ["docs/workstreams", "docs/daily"])
+        self.assertIn("## Task", protection["forbidden_headings"])
+        self.assertTrue(protection["forbidden_phrases"])
 
-        reuse = by_id["authoritative-workstream-reuse"]
-        self.assertEqual(reuse["lifecycle"]["allowed"], ["extend"])
-        self.assertIn("create-new", reuse["lifecycle"]["forbidden"])
+        review = next(case for case in self.cases if case["id"] == "read-only-review")
+        self.assertEqual(review["mutation_domains"], {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"})
+        self.assertIn("response", {oracle["kind"] for oracle in review["must"]})
+        self.assertIn("docs/**", {oracle.get("path") for oracle in review["must_not"]})
 
-        minor = by_id["minor-debugging-stays-session"]
-        promoted = by_id["reusable-root-cause-promotion"]
-        self.assertIn("investigation", minor["forbidden_artifacts"])
-        self.assertIn("investigation", promoted["required_artifacts"])
+    def test_fixture_setup_is_reproducible_and_renders_run_date(self):
+        run_date = date(2031, 4, 5)
+        with tempfile.TemporaryDirectory() as directory:
+            first = Path(directory) / "first"
+            second = Path(directory) / "second"
+            create_fixture("established-multi-session", first, run_date)
+            create_fixture("established-multi-session", second, run_date)
+            expected = first / "docs/workstreams/inventory-application/sessions/2031-04-05-0900-baseline.md"
+            self.assertTrue(expected.is_file())
+            self.assertIn("2031-04-05", expected.read_text(encoding="utf-8"))
+            self.assertTrue((first / "docs/records/investigations").is_dir())
+            self.assertTrue((first / "src/inventory.py").is_file())
+            for path in (first, second):
+                self.assertEqual(
+                    subprocess.run(["git", "log", "--format=%s"], cwd=path, capture_output=True, text=True, check=True).stdout.splitlines(),
+                    ["fixture: inventory history", "fixture: project baseline"],
+                )
+            self.assertEqual(
+                subprocess.run(["git", "rev-parse", "HEAD"], cwd=first, capture_output=True, text=True, check=True).stdout,
+                subprocess.run(["git", "rev-parse", "HEAD"], cwd=second, capture_output=True, text=True, check=True).stdout,
+            )
 
-        review = by_id["read-only-review"]
-        self.assertEqual(review["authorization"]["external_write"], "none")
-        self.assertIn("git", {oracle["kind"] for oracle in review["must_not"]})
-
-        consolidate = by_id["consolidation-small-scope"]
-        self.assertIn("design", consolidate["lifecycle"]["forbidden"])
-        self.assertIn("implementation-plan", consolidate["forbidden_artifacts"])
-
-        connector = by_id["optional-connector-evidence-gap"]
-        self.assertIn("evidence-gap", {oracle["kind"] for oracle in connector["must"]})
-
-        staging = by_id["staging-is-not-production"]
-        self.assertEqual(staging["authorization"]["external_write"], "deployment:staging")
-        self.assertIn("external-mutation", {oracle["kind"] for oracle in staging["must_not"]})
+    def test_empty_fixture_has_only_deterministic_repository_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "empty"
+            create_fixture("empty-project", destination, date(2031, 4, 5))
+            self.assertTrue((destination / ".git").is_dir())
+            self.assertFalse((destination / "docs").exists())
+            self.assertEqual(
+                subprocess.run(["git", "log", "--format=%s"], cwd=destination, capture_output=True, text=True, check=True).stdout.splitlines(),
+                ["fixture: empty baseline"],
+            )
 
 
 if __name__ == "__main__":

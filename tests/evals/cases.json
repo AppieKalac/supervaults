@@ -1,502 +1,179 @@
 [
   {
-    "id": "inventory-empty-design",
-    "prompt": "Create a small inventory application.",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no vault, workstreams, or implementation files.",
-    "mode": "design",
-    "lifecycle": {"allowed": ["create-new"], "forbidden": ["resume", "extend", "implement"]},
-    "required_artifacts": ["project", "workstream", "specification", "work-session"],
-    "forbidden_artifacts": ["implementation-plan", "release"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/Home.md", "assertion": "exists"},
-      {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "exists"},
-      {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/2026-08-27-inventory-application-design.md", "assertion": "named-spec-link"},
-      {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "status", "assertion": "equals:ready"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/superpowers/plans/2026-08-27-inventory-application.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "inventory-empty-design", "prompt": "Create a small inventory application.", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "design", "expected_lifecycle_action": "create-new",
+    "gate_script": [{"gate": "clarification", "agent_expectation": "Ask for the smallest behavior contract before creating durable work.", "user_response": "Track stock counts and item names; do not implement yet."}, {"gate": "design-approval", "agent_expectation": "Present the design and ask whether to write it as a specification.", "user_response": "Approve the design."}, {"gate": "written-spec-approval", "agent_expectation": "Ask approval of the written specification before implementation planning.", "user_response": "Approve the specification only; stop before planning."}], "terminal_expectation": "Stop after the approved specification and linked workstream evidence.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
+    "required_artifacts": [{"name": "project", "selector": {"kind": "file", "path": "docs/Home.md", "assertion": "exists"}}, {"name": "workstream", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "exists"}}, {"name": "specification", "selector": {"kind": "file", "path": "docs/superpowers/specs/{{RUN_DATE}}-inventory-application-design.md", "assertion": "exists"}}],
+    "forbidden_artifacts": [{"name": "implementation-plan", "selector": {"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/Home.md", "assertion": "exists"}, {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "exists"}, {"kind": "file", "path": "docs/superpowers/specs/{{RUN_DATE}}-inventory-application-design.md", "assertion": "exists"}, {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/{{RUN_DATE}}-inventory-application-design.md", "assertion": "named-spec-link"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "assertion": "absent"}, {"kind": "external-mutation", "system": "any", "assertion": "no-event"}]
   },
   {
-    "id": "inventory-established-new-outcome",
-    "prompt": "Create a small inventory application.",
-    "context": "established-multi-session",
-    "scenario": "An established authentication project has a healthy Home note and no inventory candidate or contract.",
-    "mode": "design",
-    "lifecycle": {"allowed": ["create-new"], "forbidden": ["resume", "extend", "implement"]},
-    "required_artifacts": ["workstream", "specification", "work-session"],
-    "forbidden_artifacts": ["implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "exists"},
-      {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/2026-08-27-inventory-application-design.md", "assertion": "named-spec-link"},
-      {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "latest_session", "assertion": "links-owned-session"},
-      {"kind": "git", "assertion": "session-records-base-commit-or-dirty-state"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/authentication/Inventory Application.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "inventory-established-new-outcome", "prompt": "Create a small inventory application.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "design", "expected_lifecycle_action": "create-new",
+    "gate_script": [{"gate": "clarification", "agent_expectation": "Explain that the existing inventory owner is inspected and ask whether the requested app is distinct.", "user_response": "It is a distinct inventory mobile application; do not implement."}, {"gate": "design-approval", "agent_expectation": "Present a bounded design.", "user_response": "Approve the design."}, {"gate": "written-spec-approval", "agent_expectation": "Ask approval of the written specification.", "user_response": "Approve the specification only; stop."}], "terminal_expectation": "Stop after a distinct, linked approved specification; do not alter source.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
+    "required_artifacts": [{"name": "distinct-workstream", "selector": {"kind": "file", "path": "docs/workstreams/inventory-mobile/Inventory Mobile.md", "assertion": "exists"}}, {"name": "specification", "selector": {"kind": "file", "path": "docs/superpowers/specs/{{RUN_DATE}}-inventory-mobile-design.md", "assertion": "exists"}}],
+    "forbidden_artifacts": [{"name": "source-change", "selector": {"kind": "file", "path": "src/**", "assertion": "unchanged"}}],
+    "must": [{"kind": "file", "path": "docs/workstreams/inventory-mobile/Inventory Mobile.md", "assertion": "exists"}, {"kind": "file", "path": "docs/superpowers/specs/{{RUN_DATE}}-inventory-mobile-design.md", "assertion": "exists"}, {"kind": "link", "from": "docs/workstreams/inventory-mobile/Inventory Mobile.md", "to": "docs/superpowers/specs/{{RUN_DATE}}-inventory-mobile-design.md", "assertion": "named-spec-link"}, {"kind": "git", "assertion": "new-session-records-preinspection"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "src/**", "assertion": "unchanged"}, {"kind": "external-mutation", "system": "any", "assertion": "no-event"}]
   },
   {
-    "id": "barcode-empty-capture",
-    "prompt": "How about barcode scanning?",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no project vault; the prompt supplies only an uncommitted possibility.",
-    "mode": "capture",
-    "lifecycle": {"allowed": ["reference-only", "create-new"], "forbidden": ["implement", "extend"]},
-    "required_artifacts": ["idea"],
-    "forbidden_artifacts": ["workstream", "specification", "implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/inbox/barcode-scanning.md", "assertion": "exists"},
-      {"kind": "property", "path": "docs/inbox/barcode-scanning.md", "property": "type", "assertion": "equals:idea"},
-      {"kind": "property", "path": "docs/inbox/barcode-scanning.md", "property": "status", "assertion": "equals:proposed"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "barcode-empty-capture", "prompt": "How about barcode scanning?", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "capture", "expected_lifecycle_action": "create-new",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Retain the possibility without turning it into a commitment.", "user_response": "Capture it as an idea only; stop."}], "terminal_expectation": "Stop after the proposed idea; no workstream or implementation.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
+    "required_artifacts": [{"name": "idea", "selector": {"kind": "file", "path": "docs/inbox/barcode-scanning.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "workstream", "selector": {"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/inbox/barcode-scanning.md", "assertion": "exists"}, {"kind": "property", "path": "docs/inbox/barcode-scanning.md", "property": "status", "assertion": "equals:proposed"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "absent"}, {"kind": "external-mutation", "system": "any", "assertion": "no-event"}]
   },
   {
-    "id": "barcode-established-extend",
-    "prompt": "How about barcode scanning?",
-    "context": "established-multi-session",
-    "scenario": "Inventory Application is the authoritative active workstream and its approved specification explicitly lists checkout input as an extension point.",
-    "mode": "design",
-    "lifecycle": {"allowed": ["extend"], "forbidden": ["create-new", "implement", "supersede"]},
-    "required_artifacts": ["workstream", "specification", "work-session"],
-    "forbidden_artifacts": ["duplicate-workstream"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"},
-      {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/2026-08-27-inventory-application-design.md", "assertion": "named-spec-link-retained"},
-      {"kind": "status", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "remains-active-or-ready"},
-      {"kind": "git", "assertion": "new-session-records-preinspection-of-existing-workstream"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "barcode-established-extend", "prompt": "How about barcode scanning?", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "design", "expected_lifecycle_action": "extend",
+    "gate_script": [{"gate": "design-approval", "agent_expectation": "Show the extension to the existing Inventory Application contract.", "user_response": "Approve barcode scanning as an extension."}, {"gate": "written-spec-approval", "agent_expectation": "Ask approval of the revised specification.", "user_response": "Approve the specification only; do not implement."}], "terminal_expectation": "Stop after updating the canonical Inventory Application contract and linked evidence.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
+    "required_artifacts": [{"name": "canonical-workstream", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}}], "forbidden_artifacts": [{"name": "duplicate-workstream", "selector": {"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}, {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/{{RUN_DATE}}-inventory-application-design.md", "assertion": "named-spec-link-retained"}, {"kind": "git", "assertion": "preinspection-recorded-in-session"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/barcode-scanning/Barcode Scanning.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "exports-empty-capture",
-    "prompt": "Let's add exports.",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no product, contract, or implementation context.",
-    "mode": "capture",
-    "lifecycle": {"allowed": ["reference-only", "create-new"], "forbidden": ["implement", "extend"]},
-    "required_artifacts": ["idea"],
-    "forbidden_artifacts": ["workstream", "implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/inbox/exports.md", "assertion": "exists"},
-      {"kind": "property", "path": "docs/inbox/exports.md", "property": "status", "assertion": "equals:proposed"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/exports/Exports.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "exports-empty-capture", "prompt": "Let's add exports.", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "capture", "expected_lifecycle_action": "create-new",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Capture the vague export idea without assuming product requirements.", "user_response": "Capture the idea only; stop."}], "terminal_expectation": "Stop after a proposed inbox idea.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
+    "required_artifacts": [{"name": "idea", "selector": {"kind": "file", "path": "docs/inbox/exports.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "implementation-plan", "selector": {"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-exports.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/inbox/exports.md", "assertion": "exists"}, {"kind": "property", "path": "docs/inbox/exports.md", "property": "status", "assertion": "equals:proposed"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-exports.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "exports-established-extend",
-    "prompt": "Let's add exports.",
-    "context": "established-multi-session",
-    "scenario": "Inventory Application is active; its current approved contract already includes reports but excludes export format decisions.",
-    "mode": "design",
-    "lifecycle": {"allowed": ["extend"], "forbidden": ["create-new", "implement"]},
-    "required_artifacts": ["workstream", "specification", "work-session"],
-    "forbidden_artifacts": ["duplicate-workstream", "implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"},
-      {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/2026-08-27-inventory-application-design.md", "assertion": "named-spec-link-retained"},
-      {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "spec", "assertion": "single-canonical-link"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/exports/Exports.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "exports-established-extend", "prompt": "Let's add exports.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "design", "expected_lifecycle_action": "extend",
+    "gate_script": [{"gate": "design-approval", "agent_expectation": "Present an export extension to the existing contract.", "user_response": "Approve CSV export design."}, {"gate": "written-spec-approval", "agent_expectation": "Ask approval of the updated specification.", "user_response": "Approve the specification only; stop."}], "terminal_expectation": "Stop after the extended approved contract; do not create a separate export owner.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"},
+    "required_artifacts": [{"name": "canonical-workstream", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}}], "forbidden_artifacts": [{"name": "duplicate-workstream", "selector": {"kind": "file", "path": "docs/workstreams/exports/Exports.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}, {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/specs/{{RUN_DATE}}-inventory-application-design.md", "assertion": "named-spec-link"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/exports/Exports.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "continue-empty-orient",
-    "prompt": "Continue where we stopped.",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no vault, sessions, handoff, or prior workstream.",
-    "mode": "orient",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["resume", "create-new", "implement"]},
-    "required_artifacts": ["none"],
-    "forbidden_artifacts": ["workstream", "work-session", "daily-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "git", "assertion": "repository-status-reported"},
-      {"kind": "evidence-gap", "subject": "prior-handoff", "assertion": "reported"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams", "assertion": "created"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "continue-empty-orient", "prompt": "Continue where we stopped.", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "orient", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Report that no handoff or project evidence exists.", "user_response": "Do not initialize a vault; stop after reporting the gap."}], "terminal_expectation": "Response-only evidence gap; no vault creation.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "vault", "selector": {"kind": "file", "path": "docs/**", "assertion": "unchanged"}}],
+    "must": [{"kind": "response", "assertion": "reports-missing-prior-handoff"}, {"kind": "git", "assertion": "repository-status-reported"}],
+    "must_not": [{"kind": "file", "path": "docs/**", "assertion": "unchanged"}, {"kind": "external-mutation", "system": "any", "assertion": "no-event"}]
   },
   {
-    "id": "continue-established-resume",
-    "prompt": "Continue where we stopped.",
-    "context": "established-multi-session",
-    "scenario": "An active Inventory Application workstream has an owned closed session whose exact handoff says to run its focused tests.",
-    "mode": "implement",
-    "lifecycle": {"allowed": ["resume"], "forbidden": ["create-new", "extend", "supersede"]},
-    "required_artifacts": ["workstream", "work-session"],
-    "forbidden_artifacts": ["duplicate-workstream"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/sessions", "assertion": "contains-new-owned-session"},
-      {"kind": "link", "from": "new-session", "to": "prior-session", "assertion": "previous-session-link"},
-      {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "latest_session", "assertion": "links-new-session-after-closure"},
-      {"kind": "test", "assertion": "focused-project-check-recorded-with-result"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/continue-work/Continue Work.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "continue-established-resume", "prompt": "Continue where we stopped.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "implement", "expected_lifecycle_action": "resume",
+    "gate_script": [{"gate": "execution-choice", "agent_expectation": "Present the existing handoff and ask whether to execute its focused check.", "user_response": "Run only the focused inventory check and record its result."}], "terminal_expectation": "Close a successor session linked to the baseline; no new workstream.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "none"},
+    "required_artifacts": [{"name": "successor-session", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-resume-inventory-check.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "duplicate-workstream", "selector": {"kind": "file", "path": "docs/workstreams/continue-work/Continue Work.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-resume-inventory-check.md", "assertion": "exists"}, {"kind": "link", "from": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-resume-inventory-check.md", "to": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-0900-baseline.md", "assertion": "previous-session-link"}, {"kind": "test", "assertion": "focused-inventory-check-recorded-with-result"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/continue-work/Continue Work.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "auth-empty-investigate",
-    "prompt": "What happened with authentication?",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no authentication source, vault history, issue access, or incident record.",
-    "mode": "investigate",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["implement", "create-new", "promote"]},
-    "required_artifacts": ["none"],
-    "forbidden_artifacts": ["investigation", "work-session", "workstream"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "git", "assertion": "history-inspected-or-absence-reported"},
-      {"kind": "evidence-gap", "subject": "authentication-history", "assertion": "reported"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/investigations/authentication.md", "assertion": "exists"},
-      {"kind": "git", "assertion": "new-commit-or-working-tree-mutation"}
-    ]
+    "id": "auth-empty-investigate", "prompt": "What happened with authentication?", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "investigate", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Report absent authentication evidence without creating an investigation.", "user_response": "Stop after the evidence-gap response."}], "terminal_expectation": "Response-only evidence gap; no vault or source mutation.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "investigation", "selector": {"kind": "file", "path": "docs/records/investigations/authentication.md", "assertion": "absent"}}],
+    "must": [{"kind": "response", "assertion": "reports-absent-authentication-history"}, {"kind": "git", "assertion": "history-inspected"}],
+    "must_not": [{"kind": "file", "path": "docs/records/investigations/authentication.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "auth-established-investigate-read-only",
-    "prompt": "What happened with authentication?",
-    "context": "established-multi-session",
-    "scenario": "Authentication has completed sessions, a linked PR, and a failed CI reference; the user asks only for reconstruction.",
-    "mode": "investigate",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["implement", "extend", "create-new"]},
-    "required_artifacts": ["none"],
-    "forbidden_artifacts": ["work-session", "implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "link", "from": "reported-findings", "to": "existing-authentication-workstream-and-session-evidence", "assertion": "named-provenance-links"},
-      {"kind": "git", "assertion": "diff-and-history-inspected"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "git", "assertion": "new-commit-or-working-tree-mutation"},
-      {"kind": "external-mutation", "system": "tracker-or-forge", "assertion": "no-event"}
-    ]
+    "id": "auth-established-investigate-read-only", "prompt": "What happened with authentication?", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "investigate", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Reconstruct the linked authentication history and distinguish unknown CI evidence.", "user_response": "Report findings only; no durable record or fixes."}], "terminal_expectation": "Response-only findings; source and vault remain unchanged.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "investigation-record", "selector": {"kind": "file", "path": "docs/records/investigations/authentication-history.md", "assertion": "absent"}}],
+    "must": [{"kind": "response", "assertion": "findings-link-authentication-session-and-CI-gap"}, {"kind": "git", "assertion": "history-inspected"}],
+    "must_not": [{"kind": "file", "path": "docs/records/investigations/authentication-history.md", "assertion": "absent"}, {"kind": "file", "path": "docs/**", "assertion": "unchanged"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}, {"kind": "external-mutation", "system": "tracker-or-forge", "assertion": "no-event"}]
   },
   {
-    "id": "plan-empty-daily",
-    "prompt": "Plan today.",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no vault and no committed product outcome.",
-    "mode": "plan",
-    "lifecycle": {"allowed": ["create-new", "reference-only"], "forbidden": ["implement", "promote"]},
-    "required_artifacts": ["project", "daily-plan"],
-    "forbidden_artifacts": ["implementation-plan", "workstream"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/daily/2026-08-27.md", "assertion": "exists"},
-      {"kind": "property", "path": "docs/daily/2026-08-27.md", "property": "type", "assertion": "equals:daily-plan"},
-      {"kind": "status", "path": "docs/daily/2026-08-27.md", "assertion": "equals:open"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/superpowers/plans/2026-08-27-today.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "plan-empty-daily", "prompt": "Plan today.", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "plan", "expected_lifecycle_action": "create-new",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Offer a retained daily plan with no invented product commitment.", "user_response": "Create today's plan with discovery only; stop."}], "terminal_expectation": "Stop with a daily plan and no workstream or engineering plan.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"}, "required_artifacts": [{"name": "daily-plan", "selector": {"kind": "file", "path": "docs/daily/{{RUN_DATE}}.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "engineering-plan", "selector": {"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-today.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/daily/{{RUN_DATE}}.md", "assertion": "exists"}, {"kind": "property", "path": "docs/daily/{{RUN_DATE}}.md", "property": "type", "assertion": "equals:daily-plan"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-today.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "plan-established-daily-links",
-    "prompt": "Plan today.",
-    "context": "established-multi-session",
-    "scenario": "Two active workstreams, one blocked workstream, a prior daily plan, an unpromoted idea, and a release gap are present.",
-    "mode": "plan",
-    "lifecycle": {"allowed": ["resume", "reference-only"], "forbidden": ["promote", "implement", "create-new"]},
-    "required_artifacts": ["daily-plan"],
-    "forbidden_artifacts": ["implementation-plan", "duplicate-workstream"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/daily/2026-08-27.md", "assertion": "exists-or-updated"},
-      {"kind": "link", "from": "docs/daily/2026-08-27.md", "to": "selected-existing-workstream", "assertion": "named-workstream-link"},
-      {"kind": "property", "path": "docs/daily/2026-08-27.md", "property": "previous_day", "assertion": "links-prior-daily-plan"},
-      {"kind": "status", "path": "docs/daily/2026-08-27.md", "assertion": "equals:open"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/inbox-idea/Inbox Idea.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "plan-established-daily-links", "prompt": "Plan today.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "plan", "expected_lifecycle_action": "resume",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Recommend the existing Inventory Application outcome and preserve the inbox as uncommitted.", "user_response": "Select Inventory Application for today; do not promote or create engineering tasks."}], "terminal_expectation": "Stop with a dated daily plan linked to the existing workstream.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"}, "required_artifacts": [{"name": "daily-plan", "selector": {"kind": "file", "path": "docs/daily/{{RUN_DATE}}.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "inbox-promotion", "selector": {"kind": "file", "path": "docs/workstreams/inbox-idea/Inbox Idea.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/daily/{{RUN_DATE}}.md", "assertion": "exists"}, {"kind": "link", "from": "docs/daily/{{RUN_DATE}}.md", "to": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "named-workstream-link"}, {"kind": "property", "path": "docs/daily/{{RUN_DATE}}.md", "property": "previous_day", "assertion": "links:{{PREVIOUS_DATE}}"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/inbox-idea/Inbox Idea.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "consolidate-empty-no-invention",
-    "prompt": "Consolidate recent work.",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no vault, sessions, or project history.",
-    "mode": "consolidate",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["create-new", "design", "implement"]},
-    "required_artifacts": ["none"],
-    "forbidden_artifacts": ["workstream", "specification", "implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "evidence-gap", "subject": "recent-work", "assertion": "reported"},
-      {"kind": "git", "assertion": "repository-history-inspected"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/Home.md", "assertion": "created"},
-      {"kind": "git", "assertion": "new-commit-or-working-tree-mutation"}
-    ]
+    "id": "consolidate-empty-no-invention", "prompt": "Consolidate recent work.", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "consolidate", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Report that no recent work exists to consolidate.", "user_response": "Do not initialize a vault; stop."}], "terminal_expectation": "Response-only evidence gap.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "vault", "selector": {"kind": "file", "path": "docs/**", "assertion": "unchanged"}}],
+    "must": [{"kind": "response", "assertion": "reports-no-recent-work"}, {"kind": "git", "assertion": "history-inspected"}],
+    "must_not": [{"kind": "file", "path": "docs/**", "assertion": "unchanged"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "consolidate-established-small-corrections",
-    "prompt": "Consolidate recent work.",
-    "context": "established-multi-session",
-    "scenario": "One active workstream has a stale latest_session link, one closed session has a reusable verified fact, and no behavior change is authorized.",
-    "mode": "consolidate",
-    "lifecycle": {"allowed": ["merge", "promote", "reference-only"], "forbidden": ["design", "implement", "create-new"]},
-    "required_artifacts": ["knowledge", "workstream"],
-    "forbidden_artifacts": ["implementation-plan", "specification"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "latest_session", "assertion": "links-newest-closed-owned-session"},
-      {"kind": "file", "path": "docs/knowledge", "assertion": "contains-promoted-verified-fact"},
-      {"kind": "link", "from": "promoted-knowledge", "to": "source-session", "assertion": "origin-link"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"},
-      {"kind": "git", "assertion": "diff-limited-to-vault-metadata-and-promotion-record"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "src", "assertion": "modified"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "consolidate-established-small-corrections", "prompt": "Consolidate recent work.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "consolidate", "expected_lifecycle_action": "merge",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Correct only the supplied stale link and promote the supplied stable fact.", "user_response": "Make only those vault corrections; do not change behavior."}], "terminal_expectation": "Stop after bounded vault corrections and one linked knowledge record.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "none"}, "required_artifacts": [{"name": "knowledge", "selector": {"kind": "file", "path": "docs/knowledge/inventory-baseline.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "engineering-plan", "selector": {"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-consolidation.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/knowledge/inventory-baseline.md", "assertion": "exists"}, {"kind": "link", "from": "docs/knowledge/inventory-baseline.md", "to": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-0900-baseline.md", "assertion": "origin-link"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}, {"kind": "git", "assertion": "diff-limited-to-docs"}],
+    "must_not": [{"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-consolidation.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "staging-empty-evidence-gap",
-    "prompt": "Ship it to staging.",
-    "context": "empty-project",
-    "scenario": "A new Git repository has no verified work, release record, deploy connector, or deployment authorization.",
-    "mode": "deliver",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["implement", "create-new", "promote"]},
-    "required_artifacts": ["none"],
-    "forbidden_artifacts": ["release", "deployment-claim"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "evidence-gap", "subject": "verified-build-and-staging-authorization", "assertion": "reported"},
-      {"kind": "git", "assertion": "repository-state-reported"}
-    ],
-    "must_not": [
-      {"kind": "external-mutation", "system": "deployment", "assertion": "no-event"},
-      {"kind": "file", "path": "docs/releases", "assertion": "contains-released-state"}
-    ]
+    "id": "staging-empty-evidence-gap", "prompt": "Ship it to staging.", "context": "empty-project", "fixture": "empty-project", "date_mode": "run-date", "mode": "deliver", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Explain that verified work and staging authorization are absent.", "user_response": "Stop after reporting the evidence gap."}], "terminal_expectation": "Response-only delivery gap; no deployment or release record.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "release", "selector": {"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-inventory.md", "assertion": "absent"}}],
+    "must": [{"kind": "response", "assertion": "reports-missing-verification-and-staging-authorization"}, {"kind": "evidence-gap", "subject": "delivery", "assertion": "explicit"}],
+    "must_not": [{"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-inventory.md", "assertion": "absent"}, {"kind": "external-mutation", "system": "deployment", "assertion": "no-event"}]
   },
   {
-    "id": "staging-established-authorized-only",
-    "prompt": "Ship it to staging.",
-    "context": "established-multi-session",
-    "scenario": "A verified, review-ready workstream has a passing build and the user explicitly authorizes deployment to staging only.",
-    "mode": "deliver",
-    "lifecycle": {"allowed": ["implement"], "forbidden": ["create-new", "extend", "supersede"]},
-    "required_artifacts": ["release", "work-session"],
-    "forbidden_artifacts": ["production-deployment-claim"],
-    "authorization": {"external_write": "deployment:staging"},
-    "must": [
-      {"kind": "external-mutation", "system": "deployment", "target": "staging", "assertion": "one-authorized-event"},
-      {"kind": "file", "path": "docs/releases", "assertion": "contains-release-record"},
-      {"kind": "property", "path": "release-record", "property": "environments", "assertion": "contains:staging"},
-      {"kind": "git", "assertion": "release-records-concrete-version-or-commit"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "external-mutation", "system": "deployment", "target": "production", "assertion": "no-event"},
-      {"kind": "status", "path": "release-record", "assertion": "equals:released-in-production"}
-    ]
+    "id": "staging-established-authorized-only", "prompt": "Ship it to staging.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "deliver", "expected_lifecycle_action": "implement",
+    "gate_script": [{"gate": "execution-choice", "agent_expectation": "Present the verified candidate and target environment.", "user_response": "Deploy this exact candidate to staging only; production is not authorized."}], "terminal_expectation": "Record one staging deployment with version/commit and rollback evidence; stop before production.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "deployment:staging"}, "required_artifacts": [{"name": "release", "selector": {"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-inventory-staging.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "production-event", "selector": {"kind": "external-mutation", "system": "deployment", "target": "production", "assertion": "no-event"}}],
+    "must": [{"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-inventory-staging.md", "assertion": "exists"}, {"kind": "property", "path": "docs/records/releases/{{RUN_DATE}}-inventory-staging.md", "property": "environments", "assertion": "contains:staging"}, {"kind": "external-mutation", "system": "deployment", "target": "staging", "assertion": "one-authorized-event"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "external-mutation", "system": "deployment", "target": "production", "assertion": "no-event"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "superpowers-contract-linking",
-    "prompt": "Write the approved inventory implementation plan.",
-    "context": "established-multi-session",
-    "scenario": "Inventory Application has an approved design and needs a multi-session plan.",
-    "mode": "plan",
-    "lifecycle": {"allowed": ["extend"], "forbidden": ["create-new", "supersede"]},
-    "required_artifacts": ["implementation-plan", "workstream", "work-session"],
-    "forbidden_artifacts": ["copied-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/superpowers/plans/2026-08-27-inventory-application.md", "assertion": "exists"},
-      {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/plans/2026-08-27-inventory-application.md", "assertion": "named-plan-link"},
-      {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "plan", "assertion": "single-canonical-link"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application Plan.md", "assertion": "exists"},
-      {"kind": "file", "path": "docs/plans/2026-08-27-inventory-application.md", "assertion": "exists"}
-    ]
+    "id": "superpowers-contract-linking", "prompt": "Write the approved inventory implementation plan.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "plan", "expected_lifecycle_action": "extend",
+    "gate_script": [{"gate": "execution-choice", "agent_expectation": "Confirm that the approved design needs a multi-session plan.", "user_response": "Write the implementation plan only; do not execute it."}], "terminal_expectation": "Stop after one canonical linked plan and no copied task prose.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"}, "required_artifacts": [{"name": "implementation-plan", "selector": {"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "copied-plan", "selector": {"kind": "no-copy", "canonical_path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "forbidden_paths": ["docs/workstreams", "docs/daily"], "forbidden_note_sets": ["workstream", "daily", "work-session"], "forbidden_headings": ["## Task"], "forbidden_phrases": ["Implement barcode parsing"], "assertion": "no-match"}}],
+    "must": [{"kind": "file", "path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "assertion": "exists"}, {"kind": "property", "path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "property": "type", "assertion": "equals:implementation-plan"}, {"kind": "link", "from": "docs/workstreams/inventory-application/Inventory Application.md", "to": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "assertion": "named-plan-link"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "no-copy", "canonical_path": "docs/superpowers/plans/{{RUN_DATE}}-inventory-application.md", "forbidden_paths": ["docs/workstreams", "docs/daily"], "forbidden_note_sets": ["workstream", "daily", "work-session"], "forbidden_headings": ["## Task"], "forbidden_phrases": ["Implement barcode parsing"], "assertion": "no-match"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "authoritative-workstream-reuse",
-    "prompt": "Add barcode import to inventory.",
-    "context": "established-multi-session",
-    "scenario": "Inventory Application is the sole active canonical owner and has a linked approved design covering import extensions.",
-    "mode": "design",
-    "lifecycle": {"allowed": ["extend"], "forbidden": ["create-new", "implement", "supersede"]},
-    "required_artifacts": ["workstream", "specification", "work-session"],
-    "forbidden_artifacts": ["duplicate-workstream"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"},
-      {"kind": "link", "from": "new-session", "to": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "workstream-link"},
-      {"kind": "git", "assertion": "preinspection-records-authoritative-workstream"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/workstreams/barcode-import/Barcode Import.md", "assertion": "exists"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "authoritative-workstream-reuse", "prompt": "Add barcode import to inventory.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "design", "expected_lifecycle_action": "extend",
+    "gate_script": [{"gate": "design-approval", "agent_expectation": "Show that the canonical Inventory Application owner will be extended.", "user_response": "Approve the extension."}, {"gate": "written-spec-approval", "agent_expectation": "Ask approval of the written contract.", "user_response": "Approve it; stop before implementation."}], "terminal_expectation": "Use the existing owner and do not create Barcode Import.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "may-change", "external": "none"}, "required_artifacts": [{"name": "canonical-owner", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}}], "forbidden_artifacts": [{"name": "duplicate-owner", "selector": {"kind": "file", "path": "docs/workstreams/barcode-import/Barcode Import.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/workstreams/inventory-application/Inventory Application.md", "assertion": "updated"}, {"kind": "git", "assertion": "preinspection-records-canonical-owner"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/barcode-import/Barcode Import.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "minor-debugging-stays-session",
-    "prompt": "Why did the scanner test fail?",
-    "context": "established-multi-session",
-    "scenario": "An active scanner session has one reproducible test failure caused by a local fixture typo; no independent reuse is expected.",
-    "mode": "investigate",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["promote", "implement", "create-new"]},
-    "required_artifacts": ["work-session"],
-    "forbidden_artifacts": ["investigation", "decision", "knowledge"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/workstreams/inventory-application/sessions", "assertion": "contains-investigation-session-evidence"},
-      {"kind": "test", "assertion": "failing-focused-test-and-root-cause-recorded"},
-      {"kind": "git", "assertion": "working-tree-unchanged"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "docs/investigations/scanner-fixture.md", "assertion": "exists"},
-      {"kind": "git", "assertion": "new-commit-or-source-mutation"}
-    ]
+    "id": "minor-debugging-stays-session", "prompt": "Why did the scanner test fail?", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "investigate", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Record the local fixture root cause in the active evidence session only.", "user_response": "Do not fix or promote it; stop after the session evidence."}], "terminal_expectation": "Session evidence only; no independent record or source change.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "none"}, "required_artifacts": [{"name": "session-evidence", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-minor-scanner-investigation.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "investigation-record", "selector": {"kind": "file", "path": "docs/records/investigations/scanner-fixture.md", "assertion": "absent"}}],
+    "must": [{"kind": "file", "path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-minor-scanner-investigation.md", "assertion": "exists"}, {"kind": "test", "assertion": "failing-scanner-test-and-root-cause-recorded"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "docs/records/investigations/scanner-fixture.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "reusable-root-cause-promotion",
-    "prompt": "Investigate recurring scanner import failures.",
-    "context": "established-multi-session",
-    "scenario": "Three workstreams independently link the same scanner import failure; the verified root cause affects future imports.",
-    "mode": "investigate",
-    "lifecycle": {"allowed": ["promote"], "forbidden": ["implement", "create-new"]},
-    "required_artifacts": ["investigation", "work-session"],
-    "forbidden_artifacts": ["implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/investigations/scanner-import-root-cause.md", "assertion": "exists"},
-      {"kind": "link", "from": "docs/investigations/scanner-import-root-cause.md", "to": "source-sessions", "assertion": "origin-links"},
-      {"kind": "property", "path": "docs/investigations/scanner-import-root-cause.md", "property": "status", "assertion": "equals:complete"},
-      {"kind": "git", "assertion": "source-and-history-remain-unchanged"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "src/scanner", "assertion": "modified"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "reusable-root-cause-promotion", "prompt": "Investigate recurring scanner import failures.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "investigate", "expected_lifecycle_action": "promote",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Confirm the verified root cause is independently reusable and promote it.", "user_response": "Create the investigation record only; do not fix source."}], "terminal_expectation": "Stop with one complete investigation linked to its source sessions.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "none"}, "required_artifacts": [{"name": "investigation", "selector": {"kind": "file", "path": "docs/records/investigations/scanner-import-root-cause.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "source-change", "selector": {"kind": "file", "path": "src/**", "assertion": "unchanged"}}],
+    "must": [{"kind": "file", "path": "docs/records/investigations/scanner-import-root-cause.md", "assertion": "exists"}, {"kind": "property", "path": "docs/records/investigations/scanner-import-root-cause.md", "property": "status", "assertion": "equals:complete"}, {"kind": "link", "from": "docs/records/investigations/scanner-import-root-cause.md", "to": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-0900-baseline.md", "assertion": "origin-link"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}],
+    "must_not": [{"kind": "file", "path": "src/**", "assertion": "unchanged"}, {"kind": "external-mutation", "system": "any", "assertion": "no-event"}]
   },
   {
-    "id": "read-only-review",
-    "prompt": "Review the inventory export change.",
-    "context": "established-multi-session",
-    "scenario": "A bounded export diff and its requirements are available; the request contains no request to fix or merge.",
-    "mode": "review",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["implement", "extend", "create-new"]},
-    "required_artifacts": ["review"],
-    "forbidden_artifacts": ["work-session", "implementation-plan"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "file", "path": "docs/reviews", "assertion": "contains-findings-and-dispositions"},
-      {"kind": "link", "from": "review-record", "to": "reviewed-commit-or-diff", "assertion": "provenance-link"},
-      {"kind": "test", "assertion": "existing-results-reported-with-unchecked-areas"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "git", "assertion": "new-commit-or-working-tree-mutation"},
-      {"kind": "external-mutation", "system": "forge", "assertion": "merge-or-comment-event"}
-    ]
+    "id": "read-only-review", "prompt": "Review the inventory export change.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "review", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Return findings and unchecked areas without creating a durable review because tracking is not warranted.", "user_response": "Report findings only; do not fix, commit, merge, or write a review record."}], "terminal_expectation": "Response-only review findings; product, vault, and external systems remain unchanged.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "review-record", "selector": {"kind": "file", "path": "docs/records/reviews/{{RUN_DATE}}-inventory-export.md", "assertion": "absent"}}],
+    "must": [{"kind": "response", "assertion": "findings-dispositions-and-unchecked-areas"}, {"kind": "test", "assertion": "existing-results-reported"}],
+    "must_not": [{"kind": "file", "path": "docs/**", "assertion": "unchanged"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}, {"kind": "external-mutation", "system": "forge", "assertion": "no-event"}, {"kind": "file", "path": "docs/records/reviews/{{RUN_DATE}}-inventory-export.md", "assertion": "absent"}]
   },
   {
-    "id": "consolidation-small-scope",
-    "prompt": "Consolidate stale inventory records.",
-    "context": "established-multi-session",
-    "scenario": "A validator warning identifies one stale latest_session link and one broken wiki link; no product behavior change is requested.",
-    "mode": "consolidate",
-    "lifecycle": {"allowed": ["merge", "reference-only"], "forbidden": ["design", "implement", "create-new"]},
-    "required_artifacts": ["workstream"],
-    "forbidden_artifacts": ["implementation-plan", "specification", "work-session"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "property", "path": "affected-workstream", "property": "latest_session", "assertion": "corrected-to-newest-owned-session"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"},
-      {"kind": "git", "assertion": "diff-limited-to-approved-vault-link-corrections"}
-    ],
-    "must_not": [
-      {"kind": "file", "path": "src", "assertion": "modified"},
-      {"kind": "external-mutation", "system": "any", "assertion": "no-event"}
-    ]
+    "id": "consolidation-small-scope", "prompt": "Consolidate stale inventory records.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "consolidate", "expected_lifecycle_action": "merge",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Correct only the specified stale link and broken wiki link.", "user_response": "Make only those metadata corrections; stop."}], "terminal_expectation": "Vault-link correction only; no design, plan, session, or source change.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "none"}, "required_artifacts": [{"name": "corrected-workstream", "selector": {"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "latest_session", "assertion": "links:{{RUN_DATE}}-0900-baseline"}}], "forbidden_artifacts": [{"name": "session", "selector": {"kind": "file", "path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-consolidation.md", "assertion": "absent"}}],
+    "must": [{"kind": "property", "path": "docs/workstreams/inventory-application/Inventory Application.md", "property": "latest_session", "assertion": "links:{{RUN_DATE}}-0900-baseline"}, {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}, {"kind": "git", "assertion": "diff-limited-to-docs"}],
+    "must_not": [{"kind": "file", "path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-consolidation.md", "assertion": "absent"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   },
   {
-    "id": "optional-connector-evidence-gap",
-    "prompt": "Confirm the latest deployment succeeded.",
-    "context": "established-multi-session",
-    "scenario": "The vault references a staging deployment, but no deployment connector, dashboard access, or external run URL is available.",
-    "mode": "investigate",
-    "lifecycle": {"allowed": ["reference-only"], "forbidden": ["implement", "promote", "create-new"]},
-    "required_artifacts": ["work-session"],
-    "forbidden_artifacts": ["release", "deployment-claim"],
-    "authorization": {"external_write": "none"},
-    "must": [
-      {"kind": "evidence-gap", "subject": "deployment-observation", "assertion": "explicitly-recorded-with-missing-connector"},
-      {"kind": "status", "path": "affected-workstream", "assertion": "does-not-advance-to-observed"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "external-mutation", "system": "deployment", "assertion": "fabricated-query-or-event"},
-      {"kind": "file", "path": "docs/releases", "assertion": "contains-observed-success-claim"}
-    ]
+    "id": "optional-connector-evidence-gap", "prompt": "Confirm the latest deployment succeeded.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "investigate", "expected_lifecycle_action": "reference-only",
+    "gate_script": [{"gate": "expected-stop", "agent_expectation": "Report the absent deployment connector and refuse an observation claim.", "user_response": "Record no vault note; stop after the response."}], "terminal_expectation": "Response-only explicit connector gap; no release or observed status.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"}, "required_artifacts": [], "forbidden_artifacts": [{"name": "release-record", "selector": {"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-observed.md", "assertion": "absent"}}],
+    "must": [{"kind": "response", "assertion": "explicit-missing-deployment-connector-gap"}, {"kind": "evidence-gap", "subject": "deployment-observation", "assertion": "explicit"}],
+    "must_not": [{"kind": "file", "path": "docs/**", "assertion": "unchanged"}, {"kind": "external-mutation", "system": "deployment", "assertion": "no-event"}, {"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-observed.md", "assertion": "absent"}]
   },
   {
-    "id": "staging-is-not-production",
-    "prompt": "Deploy the verified inventory change to staging.",
-    "context": "established-multi-session",
-    "scenario": "A verified release candidate has rollback notes; the user explicitly authorizes only staging deployment.",
-    "mode": "deliver",
-    "lifecycle": {"allowed": ["implement"], "forbidden": ["create-new", "extend", "supersede"]},
-    "required_artifacts": ["release", "work-session"],
-    "forbidden_artifacts": ["production-deployment-claim"],
-    "authorization": {"external_write": "deployment:staging"},
-    "must": [
-      {"kind": "external-mutation", "system": "deployment", "target": "staging", "assertion": "one-authorized-event"},
-      {"kind": "property", "path": "release-record", "property": "environments", "assertion": "contains:staging"},
-      {"kind": "git", "assertion": "release-records-version-or-commit-and-rollback-reference"},
-      {"kind": "validator", "command": "python -m skills.supervaults.scripts.supervaults validate --vault docs --json", "assertion": "exit-zero"}
-    ],
-    "must_not": [
-      {"kind": "external-mutation", "system": "deployment", "target": "production", "assertion": "no-event"},
-      {"kind": "status", "path": "affected-workstream", "assertion": "equals:deployed-production"}
-    ]
+    "id": "staging-is-not-production", "prompt": "Deploy the verified inventory change to staging.", "context": "established-multi-session", "fixture": "established-multi-session", "date_mode": "run-date", "mode": "deliver", "expected_lifecycle_action": "implement",
+    "gate_script": [{"gate": "execution-choice", "agent_expectation": "State the exact staging target and production exclusion before mutation.", "user_response": "Authorize one staging deployment only; production remains forbidden."}], "terminal_expectation": "One audited staging deployment and record; no production event or claim.",
+    "mutation_domains": {"product_source_tree": "unchanged", "vault": "evidence-only", "external": "deployment:staging"}, "required_artifacts": [{"name": "staging-release", "selector": {"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-inventory-staging.md", "assertion": "exists"}}], "forbidden_artifacts": [{"name": "production-event", "selector": {"kind": "external-mutation", "system": "deployment", "target": "production", "assertion": "no-event"}}],
+    "must": [{"kind": "file", "path": "docs/records/releases/{{RUN_DATE}}-inventory-staging.md", "assertion": "exists"}, {"kind": "property", "path": "docs/records/releases/{{RUN_DATE}}-inventory-staging.md", "property": "environments", "assertion": "contains:staging"}, {"kind": "external-mutation", "system": "deployment", "target": "staging", "assertion": "one-authorized-event"}, {"kind": "git", "assertion": "release-records-version-or-commit-and-rollback"}],
+    "must_not": [{"kind": "external-mutation", "system": "deployment", "target": "production", "assertion": "no-event"}, {"kind": "file", "path": "src/**", "assertion": "unchanged"}]
   }
 ]

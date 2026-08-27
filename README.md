@@ -48,9 +48,10 @@ docs/
 ├── superpowers/specs/
 ├── superpowers/plans/
 ├── knowledge/
-├── investigations/
-├── reviews/
-└── releases/
+└── records/
+    ├── investigations/
+    ├── reviews/
+    └── releases/
 ```
 
 `Home.md` holds project-level truth; a workstream owns the current outcome; sessions contain bounded observed evidence and handoffs. Specifications and implementation plans stay under `superpowers/` and are connected through named `spec` and `plan` links. Use the validator to check links, statuses, evidence-gated sessions, duplicate owners, delivery claims, and stale lifecycle metadata.

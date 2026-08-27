@@ -1,0 +1,14 @@
+{
+  "name": "empty-project",
+  "context": "empty-project",
+  "directories": [],
+  "commits": [
+    {
+      "message": "fixture: empty baseline",
+      "timestamp": "{{RUN_DATE}}T08:00:00+00:00",
+      "files": [
+        {"path": ".gitignore", "content": "__pycache__/\n"}
+      ]
+    }
+  ]
+}

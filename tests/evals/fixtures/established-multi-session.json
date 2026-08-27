@@ -1,0 +1,37 @@
+{
+  "name": "established-multi-session",
+  "context": "established-multi-session",
+  "directories": [
+    "docs/records/investigations",
+    "docs/records/reviews",
+    "docs/records/releases",
+    "docs/knowledge",
+    "docs/inbox",
+    "docs/superpowers/plans"
+  ],
+  "commits": [
+    {
+      "message": "fixture: project baseline",
+      "timestamp": "{{RUN_DATE}}T08:00:00+00:00",
+      "files": [
+        {"path": ".gitignore", "content": "__pycache__/\n"},
+        {"path": "README.md", "content": "# Fixture Inventory\n"},
+        {"path": "docs/Home.md", "content": "---\ntype: project\nstatus: active\ncreated: {{RUN_DATE}}\n---\n# Fixture Inventory\n\n## Current health\nInventory work continues.\n"},
+        {"path": "docs/daily/{{PREVIOUS_DATE}}.md", "content": "---\ntype: daily-plan\nstatus: reconciled\nproject: '[[Home]]'\ndate: {{PREVIOUS_DATE}}\n---\n# {{PREVIOUS_DATE}}\n\n## Reconciliation\nInventory advanced.\n"},
+        {"path": "src/inventory.py", "content": "def count_items():\n    return 0\n"}
+      ]
+    },
+    {
+      "message": "fixture: inventory history",
+      "timestamp": "{{RUN_DATE}}T09:00:00+00:00",
+      "files": [
+        {"path": "docs/superpowers/specs/{{RUN_DATE}}-inventory-application-design.md", "content": "---\ntype: specification\nstatus: approved\nproject: '[[Home]]'\nworkstream: '[[Inventory Application]]'\n---\n# Inventory Application Design\n\nBarcode and export extensions are in scope.\n"},
+        {"path": "docs/workstreams/inventory-application/Inventory Application.md", "content": "---\ntype: workstream\nstage: implementation\nstatus: active\nproject: '[[Home]]'\nspec: '[[{{RUN_DATE}}-inventory-application-design]]'\nlatest_session: '[[{{RUN_DATE}}-0900-baseline]]'\n---\n# Inventory Application\n\n## Outcome\nDeliver a small inventory application.\n\n## Current state\nBaseline implementation is verified.\n\n## Next action\nRun the focused inventory check.\n"},
+        {"path": "docs/workstreams/inventory-application/sessions/{{RUN_DATE}}-0900-baseline.md", "content": "---\ntype: work-session\nstage: implementation\nstatus: verified\nproject: '[[Home]]'\nworkstream: '[[Inventory Application]]'\nowner: fixture\ndate: {{RUN_DATE}}\nend_commit: fixture-inventory-history\n---\n# Inventory baseline\n\n## Actual blast radius\n- Surface: Tests and tooling\n  State: unchanged\n  Detail: Baseline fixture verification only.\n\n## Verification evidence\nCheck: fixture baseline\nResult: passed — fixture history created\n\n## Handoff\nCurrent state: Inventory baseline is verified.\nNext action: Run the focused inventory check.\n"},
+        {"path": "docs/workstreams/authentication/Authentication.md", "content": "---\ntype: workstream\nstage: verification\nstatus: active\nproject: '[[Home]]'\nlatest_session: '[[{{RUN_DATE}}-0915-authentication]]'\n---\n# Authentication\n\n## Outcome\nReconstruct authentication history.\n"},
+        {"path": "docs/workstreams/authentication/sessions/{{RUN_DATE}}-0915-authentication.md", "content": "---\ntype: work-session\nstage: verification\nstatus: verified\nproject: '[[Home]]'\nworkstream: '[[Authentication]]'\nowner: fixture\ndate: {{RUN_DATE}}\nend_commit: fixture-inventory-history\n---\n# Authentication history\n\n## Actual blast radius\n- Surface: Tests and tooling\n  State: unchanged\n  Detail: Historical fixture evidence only.\n\n## Verification evidence\nCheck: fixture authentication history\nResult: failed — CI reference unavailable\n\n## Handoff\nCurrent state: Authentication history needs reconstruction.\nNext action: Inspect the linked session evidence.\n"},
+        {"path": "src/authentication.py", "content": "def authenticate(token):\n    return bool(token)\n"}
+      ]
+    }
+  ]
+}

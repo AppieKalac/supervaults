@@ -18,11 +18,30 @@ Use the canonical surfaces in `skills/supervaults/scripts/supervaults/schema.py`
 
 For each relevant surface record `changed`, `unchanged`, `not-applicable`, `unknown`, or `not-checked`, plus a substantive detail when required. Compare actual to expected and retain deviations; never rewrite the expectation after the fact.
 
-The session template at `skills/supervaults/templates/vault/session.md.tmpl` is the structured evidence contract. A closable session needs:
+The session template at `skills/supervaults/templates/vault/session.md.tmpl` is the structured evidence contract. Record actual impact in this canonical shape:
+
+```text
+Surface: <canonical impact surface>
+State: <changed | unchanged | not-applicable | unknown | not-checked>
+Detail: <substantive detail>
+```
+
+Record a concrete `Check` and one canonical `Result` form:
+
+- `passed — <substantive detail>`
+- `failed — <substantive detail>`
+- `not-run — <reason>`
+- `manual-check — <substantive observation>`
+
+The parser also accepts its supported delimiter variants (`:`, `--`, `-`, or parenthesized detail), but use the forms above when authoring new evidence. Record handoff as `Current state: <substantive current state>` and `Next action: <exact next action>`.
+
+A closable session needs:
 
 - at least one canonical actual-impact surface with state and substantive detail (or justified `unchanged`);
 - at least one concrete `Check` and allowed `Result` with version/commit/environment context as applicable; and
 - substantive `Current state` and exact `Next action` handoff fields.
+
+Blank or placeholder fields cannot pass closure. Replace every template prompt with observed content before calling `close-session`; examples shown in angle brackets are instructions, not evidence.
 
 ## Fresh verification
 

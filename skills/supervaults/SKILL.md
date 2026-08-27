@@ -7,7 +7,7 @@ description: Plan, investigate, design, implement, review, consolidate, deliver,
 
 Use one repository-local Obsidian project vault as durable development memory while the vendored Superpowers modules remain authoritative for engineering method. Git, tests, CI, issue trackers, release systems, deployments, and observability remain authoritative for their own state.
 
-Do not load every reference. Follow the shared protocol, select a mode, then read only the focused references and vendored method named by that route. Read any invoked vendored file completely before following it.
+Do not load every reference. Follow the shared protocol, select a mode, then follow that mode's ordered recipe: load its prerequisite references and complete its focused preinspection before reading or invoking a vendored method. Read any invoked vendored file completely before following it.
 
 ## Shared protocol
 
@@ -23,25 +23,27 @@ Resolve vault → preinspect → choose lifecycle action → choose operating mo
 2. Preinspect the relevant lifecycle neighborhood before creating anything. Read [lifecycle routing](references/lifecycle-routing.md), inspect current contracts, workstreams, recent sessions, Git state, and available external references, then choose `resume`, `extend`, `promote`, `implement`, `supersede`, `merge`, `create-new`, or `reference-only`.
 3. Select the operating mode below. If intent could reasonably select different lifecycle actions, report the evidence found and ask the user to choose; do not create a competing workstream or contract.
 4. Before material mutation, state the bounded outcome, explicit exclusions, risk, and expected blast radius. Open one uniquely owned session for each independent execution owner. Trivial edits need no session unless durable context would otherwise be lost.
-5. Read [operating modes](references/operating-modes.md), then read the applicable `vendor/.../SKILL.md` completely. That vendored module is authoritative for its engineering phase.
+5. Read [operating modes](references/operating-modes.md), load the selected mode's prerequisites in order, and only then read the applicable `vendor/.../SKILL.md` completely. That vendored module is authoritative for its engineering procedure and gates; apply Supervaults' internal-method branding and handoff adaptation.
 6. After every design, planning, execution, review, or verification phase, explicitly return control to Supervaults. Record the actual result and actual blast radius, evidence, deviations, blockers, and exact next action; reconcile the session into the owning workstream and project truth.
 7. Read [quality gates](references/quality-gates.md), run fresh project checks and vault validation, then make only evidence-supported state or delivery claims. Write a handoff before closing a session.
 
 Never store secrets, credentials, private chain-of-thought, raw log dumps, or copied external-system histories in the vault.
 
-## Mode routing
+## Ordered mode routing
 
-| Mode | Select when | Read next |
+Every row means: **1. load prerequisites and preinspect → 2. run only the applicable internal method → 3. return to Supervaults for evidence, reconciliation, validation, and handoff.** No vendored method may run before step 1. Read [operating modes](references/operating-modes.md) for the exact recipe.
+
+| Mode | Select when | Ordered route |
 |---|---|---|
-| Orient | Explain current state and likely next action without mutation | [lifecycle routing](references/lifecycle-routing.md), then [operating modes](references/operating-modes.md) |
-| Plan | Select project, workstream, engineering, or daily outcomes | [planning](references/planning.md), then [operating modes](references/operating-modes.md) |
-| Investigate | Reconstruct history, state, or root cause; read-only by default | [operating modes](references/operating-modes.md), then [artifact model](references/artifact-model.md) only if promotion is justified |
-| Design | Turn an idea into an approved behavior contract | [operating modes](references/operating-modes.md), then [artifact model](references/artifact-model.md) |
-| Implement | Execute an approved bounded design or implementation plan | [operating modes](references/operating-modes.md), then [quality gates](references/quality-gates.md) |
-| Review | Assess code, behavior, risk, feedback, or readiness | [operating modes](references/operating-modes.md), then [quality gates](references/quality-gates.md) |
-| Consolidate | Audit drift, close small in-scope gaps, and promote durable truth | [artifact model](references/artifact-model.md), then [quality gates](references/quality-gates.md) |
-| Deliver | Move verified work through integration, release, deployment, and observation | [integrations](references/integrations.md), then [quality gates](references/quality-gates.md) |
-| Capture | Retain an unresolved possibility without committing to it | [artifact model](references/artifact-model.md) |
+| Orient | Explain current state and likely next action without mutation | [lifecycle routing](references/lifecycle-routing.md) → no vendor method → report evidence and validate current vault state |
+| Plan | Select project, workstream, engineering, or daily outcomes | [lifecycle routing](references/lifecycle-routing.md) + [planning](references/planning.md) → planning method if applicable → reconcile plan/workstream and validate |
+| Investigate | Reconstruct history, state, or root cause; read-only by default | [lifecycle routing](references/lifecycle-routing.md) + [quality gates](references/quality-gates.md) → debugging method if applicable → record findings, reconcile, and validate |
+| Design | Turn an idea into an approved behavior contract | [lifecycle routing](references/lifecycle-routing.md) + [planning](references/planning.md) + [artifact model](references/artifact-model.md) → design method → link contract, reconcile, and validate |
+| Implement | Execute an approved bounded design or implementation plan | [lifecycle routing](references/lifecycle-routing.md) + [planning](references/planning.md) + [quality gates](references/quality-gates.md) → execution/TDD method → record actual evidence, reconcile, and validate |
+| Review | Assess code, behavior, risk, feedback, or readiness without mutation | [lifecycle routing](references/lifecycle-routing.md) + [quality gates](references/quality-gates.md) → review method → stop after findings/dispositions, reconcile, and validate |
+| Consolidate | Audit drift, close small in-scope lifecycle gaps, and promote durable truth | [lifecycle routing](references/lifecycle-routing.md) + [artifact model](references/artifact-model.md) + [quality gates](references/quality-gates.md) → no vendor method unless rerouted → reconcile and validate |
+| Deliver | Move verified work through integration, release, deployment, and observation | [lifecycle routing](references/lifecycle-routing.md) + [integrations](references/integrations.md) + [quality gates](references/quality-gates.md) → verification/branch method → record delivery evidence, reconcile, and validate |
+| Capture | Retain an unresolved possibility without committing to it | [lifecycle routing](references/lifecycle-routing.md) + [artifact model](references/artifact-model.md) → Obsidian Markdown method if editing → link provenance and validate |
 
 Natural-language requests are valid. Infer the likely mode only after focused preinspection.
 

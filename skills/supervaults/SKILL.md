@@ -1,6 +1,6 @@
 ---
 name: supervaults
-description: Use first to plan, investigate, design, implement, review, consolidate, deliver, or capture substantial repository development across sessions, including a new software project where no vault exists yet. Use before separately installed vendor methods to create or maintain the repository-local project vault, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work. In the first user-visible workflow update say `Using Supervaults' <phase>` and do not name Superpowers as a separate phase. Do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
+description: Use first to plan, investigate, design, implement, review, consolidate, deliver, or capture substantial repository development across sessions, including a new software project where no vault exists yet. Use before separately installed vendor methods to create or maintain the repository-local project vault, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work. In the first user-visible workflow update say `Using Supervaults' design` or the selected phase and do not name Superpowers as a separate phase. Do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
 ---
 
 # Supervaults

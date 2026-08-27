@@ -6,11 +6,14 @@ from datetime import date
 from pathlib import Path
 
 from tests.evals.setup_fixture import create_fixture, load_fixture
+from tests.evals.scoring import copied_plan_blocks, score_no_copy
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES_PATH = ROOT / "tests/evals/cases.json"
 FIXTURE_DIR = ROOT / "tests/evals/fixtures"
+CASE_OVERLAYS_PATH = FIXTURE_DIR / "case-overlays.json"
+TESTING_DOC = ROOT / "docs/testing.md"
 
 REQUIRED_PROMPTS = {
     "Create a small inventory application.",
@@ -104,7 +107,29 @@ class EvaluationContractTests(unittest.TestCase):
                 self.assertEqual(set(case.get("mutation_domains", {})), MUTATION_DOMAINS)
                 self.assertIn(case["mutation_domains"]["product_source_tree"], {"unchanged", "may-change", "not-applicable"})
                 self.assertIn(case["mutation_domains"]["vault"], {"unchanged", "evidence-only", "may-change"})
-                self.assertIn(case["mutation_domains"]["external"], {"none", "deployment:staging"})
+                self.assertIn(case["mutation_domains"]["external"], {"none", "fake-audit:staging"})
+
+    def test_every_case_has_reproducible_machine_defined_preconditions(self):
+        overlays = json.loads(CASE_OVERLAYS_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(set(overlays), {case["id"] for case in self.cases})
+        for case in self.cases:
+            overlay = overlays[case["id"]]
+            with self.subTest(case=case["id"]):
+                self.assertEqual(overlay["fixture"], case["fixture"])
+                self.assertTrue(overlay["description"].strip())
+                self.assertTrue(overlay["actions"])
+                for action in overlay["actions"]:
+                    self.assertIn(action["kind"], {"assert-path", "write-file", "replace-text"})
+
+    def test_documented_protocol_creates_child_before_baseline_capture(self):
+        text = TESTING_DOC.read_text(encoding="utf-8")
+        allocate = text.index("Allocate an empty disposable parent directory")
+        create = text.index("Run the helper into a nonexistent child directory")
+        baseline = text.index("Capture the baseline of the created deterministic fixture")
+        dispatch = text.index("Give the clean agent exactly the prompt")
+        self.assertLess(allocate, create)
+        self.assertLess(create, baseline)
+        self.assertLess(baseline, dispatch)
 
     def test_canonical_records_and_strong_plan_copy_protection(self):
         corpus = _serialized(self.cases)
@@ -121,8 +146,7 @@ class EvaluationContractTests(unittest.TestCase):
         protection = protections[0]
         self.assertEqual(protection["canonical_path"], canonical)
         self.assertEqual(protection["forbidden_paths"], ["docs/workstreams", "docs/daily"])
-        self.assertIn("## Task", protection["forbidden_headings"])
-        self.assertTrue(protection["forbidden_phrases"])
+        self.assertEqual(protection["scorer"], "normalized-task-blocks-v1")
 
         review = next(case for case in self.cases if case["id"] == "read-only-review")
         self.assertEqual(review["mutation_domains"], {"product_source_tree": "unchanged", "vault": "unchanged", "external": "none"})
@@ -150,6 +174,41 @@ class EvaluationContractTests(unittest.TestCase):
                 subprocess.run(["git", "rev-parse", "HEAD"], cwd=first, capture_output=True, text=True, check=True).stdout,
                 subprocess.run(["git", "rev-parse", "HEAD"], cwd=second, capture_output=True, text=True, check=True).stdout,
             )
+
+    def test_case_overlay_creates_stated_stale_and_safe_fake_prerequisites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            stale = Path(directory) / "stale"
+            small_scope = Path(directory) / "small-scope"
+            recurring = Path(directory) / "recurring"
+            staging = Path(directory) / "staging"
+            create_fixture("established-multi-session", stale, date(2031, 4, 5), "consolidate-established-small-corrections")
+            create_fixture("established-multi-session", small_scope, date(2031, 4, 5), "consolidation-small-scope")
+            create_fixture("established-multi-session", recurring, date(2031, 4, 5), "reusable-root-cause-promotion")
+            create_fixture("established-multi-session", staging, date(2031, 4, 5), "staging-is-not-production")
+            self.assertIn("[[stale-baseline]]", (stale / "docs/workstreams/inventory-application/Inventory Application.md").read_text(encoding="utf-8"))
+            self.assertIn("[[stale-baseline]]", (small_scope / "docs/workstreams/inventory-application/Inventory Application.md").read_text(encoding="utf-8"))
+            self.assertIn("malformed EAN prefix", (recurring / "docs/workstreams/scanner-a/Scanner A.md").read_text(encoding="utf-8"))
+            audit = json.loads((staging / "audits/staging-deployment.json").read_text(encoding="utf-8"))
+            self.assertEqual(audit["endpoint"], "local-fake://staging")
+            self.assertEqual(audit["events"], [])
+
+    def test_normalized_plan_copy_scorer_rejects_evasive_heading_and_path_variants(self):
+        canonical = "## Task 1: Add barcode parsing\nFiles: src/barcode.py\nRun the parser tests.\n"
+        copied = "### Task 1: Add barcode parsing\nFiles: src/alternate.py\nRun the parser tests.\n"
+        self.assertTrue(copied_plan_blocks(canonical, copied))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = root / "docs/superpowers/plans/plan.md"
+            copied_note = root / "docs/workstreams/scanner/Scanner.md"
+            linked_note = root / "docs/daily/today.md"
+            plan.parent.mkdir(parents=True)
+            copied_note.parent.mkdir(parents=True)
+            linked_note.parent.mkdir(parents=True)
+            plan.write_text(canonical, encoding="utf-8")
+            copied_note.write_text(copied, encoding="utf-8")
+            linked_note.write_text("See [[plan]].\n", encoding="utf-8")
+            findings = score_no_copy(plan, [root / "docs/workstreams", root / "docs/daily"])
+            self.assertEqual([path for path, _ in findings], [copied_note])
 
     def test_empty_fixture_has_only_deterministic_repository_baseline(self):
         with tempfile.TemporaryDirectory() as directory:

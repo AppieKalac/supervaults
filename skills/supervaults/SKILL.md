@@ -1,6 +1,6 @@
 ---
 name: supervaults
-description: Plan, investigate, design, implement, review, consolidate, deliver, and capture repository-local project vault development across sessions. Use before separately installed Superpowers methods for durable project continuity, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work; do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
+description: Use first to plan, investigate, design, implement, review, consolidate, deliver, or capture substantial repository development across sessions, including a new software project where no vault exists yet. Use before separately installed Superpowers methods to create or maintain the repository-local project vault, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work; do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
 ---
 
 # Supervaults

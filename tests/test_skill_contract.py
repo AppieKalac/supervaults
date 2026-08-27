@@ -38,6 +38,7 @@ class SkillContractTests(unittest.TestCase):
         description = text.split("---", 2)[1]
         for phrase in ("plan", "investigate", "implement", "review", "consolidate", "project vault"):
             self.assertIn(phrase, description.lower())
+        self.assertIn("new software project where no vault exists yet", description.lower())
 
     def test_required_modes_and_gates_are_present(self):
         text = SKILL.read_text(encoding="utf-8").lower()

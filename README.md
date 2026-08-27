@@ -4,7 +4,9 @@ Supervaults is a Codex plugin for workstream-centered, repository-local developm
 
 ## Status
 
-Supervaults is a single visible `$supervaults` skill backed by Markdown vault templates, a cross-platform Python helper/validator, and pinned internal Superpowers and Obsidian methods. It is an offline-first lifecycle overlay: Git, tests, CI, trackers, releases, deployments, and observability remain authoritative for their own state.
+Supervaults is a single visible `$supervaults` skill backed by Markdown vault templates, a cross-platform Python helper/validator, and pinned internal Superpowers and Obsidian methods. Release candidate `0.1.0+codex.20260827161121` passes the 73-test automated suite, vendored-integrity checks, and plugin/vault validation.
+
+Installed clean-agent tests passed implicit activation, empty-project design/spec creation, established-vault planning, and a barcode-scanning extension. The complete eight-session acceptance sequence remains incomplete: the exports session exposed an evaluator dialogue gap before any repository mutation. See [Testing](docs/testing.md) for the exact boundary.
 
 ## Design and specification
 
@@ -15,7 +17,7 @@ Supervaults is a single visible `$supervaults` skill backed by Markdown vault te
 
 ## Install and prerequisites
 
-Install the plugin through Codex from this repository. The plugin requires Python 3.10+ and Git on `PATH`; its core helpers use only the Python standard library and ordinary Markdown, so they work on Windows, macOS, and Linux without a running Obsidian application.
+Install the plugin through Codex from this repository after the release-candidate branch is integrated into the repository's main worktree. The plugin requires Python 3.10+ and Git on `PATH`; its core helpers use only the Python standard library and ordinary Markdown, so they work on Windows, macOS, and Linux without a running Obsidian application.
 
 Optional connectors (forge, CI, deployment, observability, and an Obsidian live-app CLI) enrich evidence but are never required for local planning or implementation. Their absence must be recorded as an evidence gap when it prevents a delivery or observation claim.
 
@@ -43,7 +45,8 @@ The skill resolves and preinspects the vault before choosing `resume`, `extend`,
 docs/
 ├── Home.md
 ├── daily/
-├── workstreams/<slug>/<Outcome>.md
+├── workstreams/<slug>/
+│   ├── <Outcome>.md
 │   └── sessions/
 ├── superpowers/specs/
 ├── superpowers/plans/

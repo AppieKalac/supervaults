@@ -7,6 +7,12 @@ Supervaults has two different kinds of evaluation:
 
 Run both before a release candidate. A passing automated suite does not prove a live agent followed every lifecycle boundary.
 
+## Latest acceptance checkpoint
+
+On 2026-08-27, release candidate `0.1.0+codex.20260827161121` passed 73 automated tests, vendored-integrity verification, plugin validation, and valid-vault validation. Isolated installed-agent runs passed activation, empty-project design/spec creation, established-vault daily planning, and the barcode extension with protocol-complete evidence.
+
+The ordered eight-session run is not complete. Its exports session stopped without mutation after an additional design-section approval was not covered by the deterministic evaluator dialogue; the first phase update also missed the required inline-code formatting. Treat the release as locally validated but not fully accepted until that case and sessions 4–8 pass. Standard `supervaults@personal` installation also waits for the release-candidate branch to be integrated into the main plugin worktree.
+
 ## Prerequisites
 
 - Git available on `PATH`.

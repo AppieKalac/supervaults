@@ -99,6 +99,13 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("approved destination", routing)
         self.assertIn("before initialization", routing)
 
+    def test_new_artifact_names_preserve_the_users_outcome_phrase(self):
+        routing = ROUTING.read_text(encoding="utf-8")
+        self.assertIn("preserve the user's outcome noun phrase", routing)
+        self.assertIn("Inventory Application", routing)
+        self.assertIn("inventory-application", routing)
+        self.assertIn("Do not abbreviate", routing)
+
     def test_resolved_vault_overrides_vendor_contract_locations(self):
         text = PLANNING.read_text(encoding="utf-8")
         self.assertIn("<resolved-vault>/superpowers/specs/YYYY-MM-DD-<topic>-design.md", text)

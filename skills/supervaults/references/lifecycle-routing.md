@@ -13,6 +13,8 @@ Own preinspection and lifecycle choice here. Do not choose a mode or create an a
 
 5. Check for conflicting outcomes, duplicate contracts, stale state, and incomplete delivery before proposing new work.
 
+For a genuinely new outcome, preserve the user's outcome noun phrase as the canonical display name unless the user explicitly approves a rename. Derive slugs mechanically from that phrase and reuse them for the workstream and contract paths. For example, “inventory application” becomes display name `Inventory Application` and slug `inventory-application`. Do not abbreviate `Application` to `App`, invent a product name, or let an implementation method silently rename lifecycle artifacts.
+
 ## Choose one lifecycle action
 
 | Action | Meaning |

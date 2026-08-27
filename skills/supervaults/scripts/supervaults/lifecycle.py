@@ -16,6 +16,16 @@ _TEMPLATE_ROOT = Path(__file__).resolve().parents[2] / "templates" / "vault"
 _WIKI_LINK = re.compile(r"^\[\[([^\]|]+)(?:\|[^\]]+)?\]\]$")
 _HEADING = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 _SLUG = re.compile(r"[^a-z0-9]+")
+_UNRESOLVED_MARKER = re.compile(r"\{\{[^{}]+\}\}|<[^>\n]+>")
+_PLACEHOLDER = re.compile(r"\b(?:tbd|todo|to do|placeholder|copied filler|lorem ipsum|sample text|example text)\b")
+_RESULT_SIGNAL = re.compile(
+    r"\b(?:pass(?:ed|es)?|fail(?:ed|s|ure)?|result(?:s)?|exit(?:\s+code)?|"
+    r"manual(?:ly)?\s+check(?:ed)?|checked|not[- ]run)\b"
+)
+
+
+class LifecycleStateError(ValueError):
+    """An invalid requested lifecycle transition or session state."""
 
 
 def _render_note(destination: Path, template: Path, values: dict[str, str]) -> Note:
@@ -40,13 +50,13 @@ def _render_note(destination: Path, template: Path, values: dict[str, str]) -> N
 def _slug(value: str) -> str:
     result = _SLUG.sub("-", value.casefold()).strip("-")
     if not result:
-        raise ValueError("outcome must contain letters or digits")
+        raise LifecycleStateError("outcome must contain letters or digits")
     return result
 
 
 def _require_workstream(workstream: Path) -> Note:
     if not workstream.is_file():
-        raise ValueError(f"{workstream}: workstream note does not exist")
+        raise LifecycleStateError(f"{workstream}: workstream note does not exist")
     note = parse_note(workstream)
     required = ("type", "stage", "status", "project")
     missing = [field for field in required if not isinstance(note.properties.get(field), str) or not note.properties[field]]
@@ -57,7 +67,7 @@ def _require_workstream(workstream: Path) -> Note:
         or note.properties.get("status") not in TYPE_STATUSES["workstream"]
         or note.properties.get("status") in {"complete", "superseded"}
     ):
-        raise ValueError(f"{workstream}: missing or invalid workstream metadata")
+        raise LifecycleStateError(f"{workstream}: missing or invalid workstream metadata")
     return note
 
 
@@ -86,6 +96,38 @@ def _section_content(body: str, name: str) -> str:
     return body[match.end(): next_heading.start() if next_heading else len(body)].strip()
 
 
+def _is_substantive_section(content: str, require_result_signal: bool = False) -> bool:
+    """Reject empty, placeholder, and generic filler evidence before transition."""
+
+    normalized = " ".join(content.strip().split())
+    compact = re.sub(r"[^a-z0-9]", "", normalized.casefold())
+    if len(compact) < 8 or _UNRESOLVED_MARKER.search(normalized) or _PLACEHOLDER.search(normalized):
+        return False
+    if normalized.casefold() in {
+        "details", "details here", "add details here", "insert evidence here",
+        "actual blast radius", "verification evidence", "handoff", "not applicable",
+    }:
+        return False
+    if not require_result_signal or _RESULT_SIGNAL.search(normalized) is None:
+        return not require_result_signal
+    if re.search(r"\bnot[- ]run\b", normalized, re.IGNORECASE):
+        explanation = re.sub(r"\bnot[- ]run\b", "", normalized, flags=re.IGNORECASE)
+        return len(re.sub(r"[^a-z0-9]", "", explanation.casefold())) >= 8
+    return True
+
+
+def _canonical_workstream(vault: Path, workstream: Path) -> Path:
+    root = (vault / "workstreams").resolve()
+    resolved = workstream.resolve()
+    if (
+        resolved.suffix.casefold() != ".md"
+        or resolved.parent.parent != root
+        or resolved.parent.name == "archive"
+    ):
+        raise LifecycleStateError(f"{workstream}: workstream must be a direct child of workstreams/<slug>/")
+    return resolved
+
+
 def open_daily_plan(vault: Path, day: date) -> Path:
     """Create one retained daily plan and link it to the nearest preceding plan."""
 
@@ -94,7 +136,7 @@ def open_daily_plan(vault: Path, day: date) -> Path:
     if destination.exists():
         return destination
     if not (vault / "Home.md").is_file():
-        raise ValueError(f"{vault}: project overview is missing")
+        raise LifecycleStateError(f"{vault}: project overview is missing")
     destination.parent.mkdir(parents=True, exist_ok=True)
     note = _render_note(destination, _TEMPLATE_ROOT / "daily.md.tmpl", {"DATE": day.isoformat()})
     prior: list[tuple[date, Path]] = []
@@ -117,17 +159,14 @@ def open_session(vault: Path, workstream: Path, outcome: str, now: datetime, own
 
     vault = Path(vault)
     workstream = Path(workstream)
+    workstream = _canonical_workstream(vault, workstream)
     workstream_note = _require_workstream(workstream)
-    try:
-        workstream.relative_to(vault / "workstreams")
-    except ValueError as error:
-        raise ValueError(f"{workstream}: workstream is outside this vault") from error
     if not owner.strip():
-        raise ValueError("owner must not be empty")
+        raise LifecycleStateError("owner must not be empty")
     filename = f"{now:%Y-%m-%d-%H%M}-{_slug(outcome)}.md"
     destination = workstream.parent / "sessions" / filename
     if destination.exists():
-        raise ValueError(f"{destination}: session collision")
+        raise LifecycleStateError(f"{destination}: session collision")
     destination.parent.mkdir(parents=True, exist_ok=True)
     note = _render_note(
         destination,
@@ -157,18 +196,26 @@ def close_session(vault: Path, session: Path, end_commit: str | None) -> None:
     vault = Path(vault)
     session = Path(session)
     if not session.is_file():
-        raise ValueError(f"{session}: session note does not exist")
+        raise LifecycleStateError(f"{session}: session note does not exist")
     note = parse_note(session)
     if note.properties.get("type") != "work-session":
-        raise ValueError(f"{session}: not a work-session note")
+        raise LifecycleStateError(f"{session}: not a work-session note")
     if note.properties.get("status") not in {"active", "blocked", "verified", "complete"}:
-        raise ValueError(f"{session}: invalid lifecycle status")
-    for heading in ("Actual blast radius", "Verification evidence", "Handoff"):
-        if not _section_content(note.body, heading):
-            raise ValueError(f"{session}: ## {heading} requires substantive content before close")
+        raise LifecycleStateError(f"{session}: invalid lifecycle status")
     workstream_name = _link_target(note.properties.get("workstream"), "workstream", session)
     workstream_path = _find_named_note(vault, workstream_name)
+    workstream_path = _canonical_workstream(vault, workstream_path)
     workstream_note = _require_workstream(workstream_path)
+    expected_session_directory = workstream_path.parent / "sessions"
+    if session.resolve().parent != expected_session_directory:
+        raise LifecycleStateError(f"{session}: session must be inside {expected_session_directory}")
+    for heading, needs_result in (
+        ("Actual blast radius", False),
+        ("Verification evidence", True),
+        ("Handoff", False),
+    ):
+        if not _is_substantive_section(_section_content(note.body, heading), needs_result):
+            raise LifecycleStateError(f"{session}: ## {heading} requires substantive content before close")
 
     updated_properties = dict(note.properties)
     # `complete` is an explicit requested state; mechanical closure otherwise only verifies evidence.

@@ -74,12 +74,16 @@ def _score_note(note: Note, terms: list[str], baseline: bool) -> tuple[int, list
     if not terms:
         return (1, ["lifecycle context"] if baseline else [])
 
-    score = 0
+    high_matches = 0
+    middle_matches = 0
+    body_matches = 0
     reasons: list[str] = []
     stem_matches = _matches(note.path.stem, terms)
     if stem_matches:
-        increment = 120 if note.properties.get("type") == "workstream" else 80
-        score += increment * len(stem_matches)
+        if note.properties.get("type") == "workstream":
+            high_matches += len(stem_matches)
+        else:
+            middle_matches += len(stem_matches)
         prefix = f"filename exact match ({', '.join(stem_matches)}): "
         reasons.append(_reason(prefix, note.path.name))
 
@@ -87,7 +91,7 @@ def _score_note(note: Note, terms: list[str], baseline: bool) -> tuple[int, list
         rendered = ", ".join(str(item) for item in value) if isinstance(value, list) else str(value)
         matches = _matches(rendered, terms)
         if matches:
-            score += 110 * len(matches)
+            high_matches += len(matches)
             prefix = f"property {key} match ({', '.join(matches)}): "
             reasons.append(_reason(prefix, rendered))
 
@@ -96,18 +100,30 @@ def _score_note(note: Note, terms: list[str], baseline: bool) -> tuple[int, list
         if not matches:
             continue
         if line.lstrip().startswith("#"):
-            weight, kind = 60, "heading"
+            kind = "heading"
+            middle_matches += len(matches)
         elif _WIKI_LINK.search(line):
-            weight, kind = 55, "wiki link"
+            kind = "wiki link"
+            middle_matches += len(matches)
         elif _CODE_PATH.search(line):
-            weight, kind = 50, "code path"
+            kind = "code path"
+            middle_matches += len(matches)
         else:
-            weight, kind = 25, "body"
-        score += weight * len(matches)
+            kind = "body"
+            body_matches += len(matches)
         prefix = f"{kind} match ({', '.join(matches)}): "
-        reasons.append(_reason(prefix, line))
+        if len(reasons) < 12:
+            reasons.append(_reason(prefix, line))
 
-    return score, reasons
+    # Categorical tiers prevent repeated lower-value body mentions from outranking
+    # a direct workstream or metadata hit; each tier has a bounded bonus.
+    if high_matches:
+        return 300 + min(49, high_matches * 10), reasons
+    if middle_matches:
+        return 200 + min(49, middle_matches * 10), reasons
+    if body_matches:
+        return 100 + min(49, body_matches * 10), reasons
+    return 0, reasons
 
 
 def find_context(vault: Path, terms: list[str]) -> ContextReport:

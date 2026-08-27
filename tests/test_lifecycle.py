@@ -1,15 +1,35 @@
+import contextlib
+import io
+import json
 import tempfile
 import unittest
 from datetime import date, datetime
 from pathlib import Path
 
 from skills.supervaults.scripts.supervaults.context import find_context
-from skills.supervaults.scripts.supervaults.lifecycle import close_session, open_daily_plan, open_session
+from skills.supervaults.scripts.supervaults.cli import main
+from skills.supervaults.scripts.supervaults.lifecycle import (
+    LifecycleStateError,
+    close_session,
+    open_daily_plan,
+    open_session,
+)
 from skills.supervaults.scripts.supervaults.markdown import parse_note, write_note
 from skills.supervaults.scripts.supervaults.vault import initialize_vault
 
 
 class LifecycleTests(unittest.TestCase):
+    def _workstream(self, vault: Path, relative: str = "barcode-scanning/Barcode Scanning.md") -> Path:
+        workstream = vault / "workstreams" / relative
+        workstream.parent.mkdir(parents=True, exist_ok=True)
+        workstream.write_text("---\ntype: workstream\nstage: verification\nstatus: active\nproject: '[[Home]]'\n---\n# Barcode Scanning\n", encoding="utf-8")
+        return workstream
+
+    def _evidence_body(self, body: str, actual: str = "Affected scanner parsing only.", verification: str = "Focused tests pass.", handoff: str = "Review the release checklist.") -> str:
+        body = body.replace("## Actual blast radius\n", f"## Actual blast radius\n\n{actual}\n")
+        body = body.replace("## Verification evidence\n", f"## Verification evidence\n\n{verification}\n")
+        return body.replace("## Handoff\n", f"## Handoff\n\n{handoff}\n")
+
     def test_daily_plan_is_retained_and_linked_to_previous_day(self):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory) / "docs"
@@ -23,10 +43,7 @@ class LifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory) / "docs"
             initialize_vault(vault, "Inventory", date(2026, 8, 27))
-            workstream_dir = vault / "workstreams/barcode-scanning"
-            workstream_dir.mkdir()
-            workstream = workstream_dir / "Barcode Scanning.md"
-            workstream.write_text("---\ntype: workstream\nstage: design\nstatus: active\nproject: '[[Home]]'\n---\n# Barcode Scanning\n", encoding="utf-8")
+            workstream = self._workstream(vault)
             session = open_session(vault, workstream, "design", datetime(2026, 8, 27, 9, 30), "agent-a")
             note = parse_note(session)
             self.assertEqual(note.properties["workstream"], "[[Barcode Scanning]]")
@@ -38,19 +55,14 @@ class LifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory) / "docs"
             initialize_vault(vault, "Inventory", date(2026, 8, 27))
-            workstream_dir = vault / "workstreams/barcode-scanning"
-            workstream_dir.mkdir()
-            workstream = workstream_dir / "Barcode Scanning.md"
-            workstream.write_text("---\ntype: workstream\nstage: verification\nstatus: active\nproject: '[[Home]]'\n---\n# Barcode Scanning\n", encoding="utf-8")
+            workstream = self._workstream(vault)
             session = open_session(vault, workstream, "verify", datetime(2026, 8, 27, 9, 30), "agent-a")
 
             with self.assertRaisesRegex(ValueError, "Actual blast radius"):
                 close_session(vault, session, "abc123")
 
             note = parse_note(session)
-            body = note.body.replace("## Actual blast radius\n", "## Actual blast radius\n\nAffected scanner parsing only.\n")
-            body = body.replace("## Verification evidence\n", "## Verification evidence\n\nAll focused tests pass.\n")
-            body = body.replace("## Handoff\n", "## Handoff\n\nReview the release checklist.\n")
+            body = self._evidence_body(note.body, verification="All focused tests pass.")
             write_note(note.__class__(note.path, note.properties, body))
             close_session(vault, session, "abc123")
 
@@ -61,13 +73,90 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(owning.properties["latest_session"], f"[[{session.stem}]]")
             self.assertNotIn("current_session", owning.properties)
 
+    def test_close_rejects_placeholder_or_non_observable_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            for index, (actual, verification, handoff) in enumerate((
+                ("-", "Focused tests pass.", "Review the checklist."),
+                ("Affected scanner parsing.", "TBD", "Review the checklist."),
+                ("Affected scanner parsing.", "not-run", "Review the checklist."),
+                ("Affected scanner parsing.", "Implementation looks good.", "Review the checklist."),
+                ("Affected scanner parsing.", "Manual check passed.", "{{HANDOFF}}"),
+                ("copied filler", "Result: tests pass.", "Review the checklist."),
+            )):
+                session = open_session(vault, workstream, f"verify {index}", datetime(2026, 8, 27, 9, 30 + index), "agent-a")
+                note = parse_note(session)
+                write_note(note.__class__(note.path, note.properties, self._evidence_body(note.body, actual, verification, handoff)))
+                with self.assertRaises(LifecycleStateError):
+                    close_session(vault, session, None)
+
+    def test_close_preserves_explicit_complete_and_nonmatching_current_session(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            session = open_session(vault, workstream, "verify", datetime(2026, 8, 27, 9, 30), "agent-a")
+            note = parse_note(session)
+            properties = dict(note.properties)
+            properties["status"] = "complete"
+            write_note(note.__class__(note.path, properties, self._evidence_body(note.body)))
+            owner = parse_note(workstream)
+            owner_properties = dict(owner.properties)
+            owner_properties["current_session"] = "[[other-session]]"
+            write_note(owner.__class__(owner.path, owner_properties, owner.body))
+
+            close_session(vault, session, None)
+
+            self.assertEqual(parse_note(session).properties["status"], "complete")
+            self.assertEqual(parse_note(workstream).properties["current_session"], "[[other-session]]")
+
+    def test_open_session_rejects_collision_invalid_metadata_and_noncanonical_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            now = datetime(2026, 8, 27, 9, 30)
+            open_session(vault, workstream, "design", now, "agent-a")
+            with self.assertRaises(LifecycleStateError):
+                open_session(vault, workstream, "design", now, "agent-a")
+
+            malformed = vault / "workstreams/malformed/Malformed.md"
+            malformed.parent.mkdir()
+            malformed.write_text("---\ntype: workstream\nstatus: active\nproject: '[[Home]]'\n---\n# Malformed\n", encoding="utf-8")
+            with self.assertRaises(LifecycleStateError):
+                open_session(vault, malformed, "design", now, "agent-a")
+
+            malformed_frontmatter = vault / "workstreams/broken/Broken.md"
+            malformed_frontmatter.parent.mkdir()
+            malformed_frontmatter.write_text("---\n  type: workstream\n---\n# Broken\n", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                open_session(vault, malformed_frontmatter, "design", now, "agent-a")
+
+            nested = self._workstream(vault, "barcode-scanning/notes/Nested.md")
+            archived = self._workstream(vault, "archive/barcode-scanning/Archived.md")
+            with self.assertRaises(LifecycleStateError):
+                open_session(vault, nested, "design", now, "agent-a")
+            with self.assertRaises(LifecycleStateError):
+                open_session(vault, archived, "design", now, "agent-a")
+
+    def test_close_rejects_session_outside_the_owning_sessions_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            session = vault / "records" / "misplaced.md"
+            session.parent.mkdir(exist_ok=True)
+            session.write_text("---\ntype: work-session\nstatus: active\nproject: '[[Home]]'\nworkstream: '[[Barcode Scanning]]'\n---\n# Misplaced\n\n## Actual blast radius\n\nAffected scanner parsing.\n\n## Verification evidence\n\nResult: focused tests pass.\n\n## Handoff\n\nReview the checklist.\n", encoding="utf-8")
+            with self.assertRaises(LifecycleStateError):
+                close_session(vault, session, None)
+
     def test_context_ranks_property_and_workstream_filename_matches(self):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory) / "docs"
             initialize_vault(vault, "Inventory", date(2026, 8, 27))
-            workstream_dir = vault / "workstreams/barcode-scanning"
-            workstream_dir.mkdir()
-            workstream = workstream_dir / "Barcode Scanning.md"
+            workstream = self._workstream(vault)
             workstream.write_text("---\ntype: workstream\nstage: design\nstatus: active\nproject: '[[Home]]'\narea: barcode\n---\n# Barcode Scanning\n\nSee [[Home]].\n", encoding="utf-8")
             secondary = vault / "knowledge" / "Note.md"
             secondary.write_text("---\ntype: knowledge\nstatus: current\nproject: '[[Home]]'\n---\n# A note\n\nbarcode appears only in the body.\n", encoding="utf-8")
@@ -78,6 +167,42 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(report.candidates[0].path, workstream)
             self.assertGreater(report.candidates[0].score, report.candidates[1].score)
             self.assertTrue(all(len(reason) <= 240 for candidate in report.candidates for reason in candidate.reasons))
+
+    def test_context_exact_match_outranks_repeated_body_matches(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            noisy = vault / "knowledge" / "Noisy.md"
+            noisy.write_text("---\ntype: knowledge\nstatus: current\nproject: '[[Home]]'\n---\n# Notes\n\n" + "barcode body match.\n" * 100, encoding="utf-8")
+
+            report = find_context(vault, ["barcode"])
+
+            self.assertEqual(report.candidates[0].path, workstream)
+
+    def test_cli_context_is_json_and_classifies_state_and_integrity_errors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(main(["context", "--vault", str(vault), "inventory"]), 0)
+            payload = json.loads(output.getvalue())
+            self.assertEqual(set(payload), {"project", "candidates", "git_branch", "git_commit", "warnings"})
+
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["close-session", "--vault", str(vault), "--session", str(vault / "missing.md")]), 2)
+
+            malformed = vault / "bad.md"
+            malformed.write_text("not frontmatter\n", encoding="utf-8")
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["close-session", "--vault", str(vault), "--session", str(malformed)]), 1)
+
+            broken = vault / "workstreams/barcode-scanning/sessions/2026-08-27-0930-verify.md"
+            broken.parent.mkdir(parents=True)
+            broken.write_text("---\ntype: work-session\nstatus: active\nproject: '[[Home]]'\nworkstream: '[[Missing]]'\n---\n# Broken\n\n## Actual blast radius\n\nAffected scanner parsing.\n\n## Verification evidence\n\nResult: focused tests pass.\n\n## Handoff\n\nReview the checklist.\n", encoding="utf-8")
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["close-session", "--vault", str(vault), "--session", str(broken)]), 1)
 
 
 if __name__ == "__main__":

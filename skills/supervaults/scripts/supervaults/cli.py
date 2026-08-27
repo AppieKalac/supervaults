@@ -10,7 +10,7 @@ import re
 import sys
 
 from .context import find_context
-from .lifecycle import close_session, open_daily_plan, open_session
+from .lifecycle import LifecycleStateError, close_session, open_daily_plan, open_session
 from .markdown import parse_note
 from .vault import initialize_vault
 
@@ -110,9 +110,9 @@ def main(argv: list[str] | None = None) -> int:
             if workstream is not None:
                 print(workstream)
         return 0
-    except ValueError as error:
-        parser.error(str(error))
+    except LifecycleStateError as error:
+        print(str(error), file=sys.stderr)
         return 2
-    except OSError as error:
+    except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 1

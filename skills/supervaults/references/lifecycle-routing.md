@@ -4,7 +4,7 @@ Own preinspection and lifecycle choice here. Do not choose a mode or create an a
 
 ## Resolve and preinspect
 
-1. Resolve the repository root and vault. Prefer the repository's existing `Home.md`; use `docs/` only as the convention, not as permission to initialize a new vault.
+1. Resolve the repository root and vault. Prefer the repository's existing `Home.md`. If no vault exists in a new project where Supervaults applies, propose `docs/` as the resolved vault during clarification or design. Include that destination in the design gate; initialize only after it is the approved destination and before initialization of durable project artifacts. Without that approval, report the gap and do not initialize a vault.
 2. Inspect `Home.md`, relevant active/ready/blocked workstreams, canonical `spec` and `plan` links, current/latest sessions, recent handoffs, today's and previous daily plan, inbox candidates, and durable records.
 3. Inspect Git branch/commit/status and relevant project files. Read available issue, review, CI, delivery, or observability references when they affect the request.
 4. Use the context helper for ranked candidates, not automatic selection:

@@ -45,7 +45,7 @@ Blank or placeholder fields cannot pass closure. Replace every template prompt w
 
 ## Fresh verification
 
-Before a claim of success, completion, fix, readiness, or delivery, read `vendor/superpowers/skills/verification-before-completion/SKILL.md` completely and follow it as authoritative. Run the command that proves the specific claim and inspect its fresh full output. Return control to Supervaults after verification to record evidence and unchecked areas, reconcile state, validate, and hand off.
+Before a claim of success, completion, fix, readiness, or delivery, read `../../vendor/superpowers/skills/verification-before-completion/SKILL.md` completely and follow it as authoritative. Run the command that proves the specific claim and inspect its fresh full output. Return control to Supervaults after verification to record evidence and unchecked areas, reconcile state, validate, and hand off.
 
 Validate lifecycle integrity with:
 

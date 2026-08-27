@@ -23,9 +23,9 @@ Store links and bounded conclusions, not full issue descriptions, PR discussions
 
 Before invoking any module, read its vendored `SKILL.md` completely; it is authoritative for its format/tool method.
 
-- For every vault note creation or Obsidian-specific edit, use `vendor/obsidian-skills/skills/obsidian-markdown/SKILL.md`. Load its focused property/embed/callout references only when needed.
-- For `.base` derived lifecycle views, use `vendor/obsidian-skills/skills/obsidian-bases/SKILL.md`. Bases query canonical Markdown; they do not own status.
-- Use `vendor/obsidian-skills/skills/json-canvas/SKILL.md` only when the user explicitly requests a visual project map. JSON Canvas is optional and never replaces named lifecycle links.
-- Use `vendor/obsidian-skills/skills/obsidian-cli/SKILL.md` only when a running Obsidian application is available and live-app behavior is useful. The CLI is optional; do not require it for core reads, writes, search, or validation.
+- For every vault note creation or Obsidian-specific edit, use `../../vendor/obsidian-skills/skills/obsidian-markdown/SKILL.md`. Load its focused property/embed/callout references only when needed.
+- For `.base` derived lifecycle views, use `../../vendor/obsidian-skills/skills/obsidian-bases/SKILL.md`. Bases query canonical Markdown; they do not own status.
+- Use `../../vendor/obsidian-skills/skills/json-canvas/SKILL.md` only when the user explicitly requests a visual project map. JSON Canvas is optional and never replaces named lifecycle links.
+- Use `../../vendor/obsidian-skills/skills/obsidian-cli/SKILL.md` only when a running Obsidian application is available and live-app behavior is useful. The CLI is optional; do not require it for core reads, writes, search, or validation.
 
 Any vendored upstream file invoked from this reference must be read completely and remains authoritative for its engineering method. After any applicable vendored engineering or Obsidian phase, explicitly return control to Supervaults. Record only the relevant observed result/evidence, reconcile the owning workstream and project surfaces, validate the filesystem artifacts, and hand off.

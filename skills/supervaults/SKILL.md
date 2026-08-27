@@ -1,11 +1,15 @@
 ---
 name: supervaults
-description: Plan, investigate, design, implement, review, consolidate, deliver, and capture repository-local project vault development across sessions. Use for durable project continuity, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work; do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
+description: Plan, investigate, design, implement, review, consolidate, deliver, and capture repository-local project vault development across sessions. Use before separately installed Superpowers methods for durable project continuity, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work; do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
 ---
 
 # Supervaults
 
 Use one repository-local Obsidian project vault as durable development memory while the vendored Superpowers modules remain authoritative for engineering method. Git, tests, CI, issue trackers, release systems, deployments, and observability remain authoritative for their own state.
+
+Resolve the installed plugin root before following any path. Define `<supervaults-root>` as **two directory levels above this `SKILL.md`** (`skills/supervaults/../..`). All `../../vendor/...` routes below and in references are relative to the directory containing this `SKILL.md`, not the developer's target repository. References and templates are relative to this skill directory.
+
+When a global skill-discovery rule has already loaded a separately installed Superpowers skill for the same request, read Supervaults next and do not run that separate phase, announce it as the active workflow, or follow its handoff directly. Supervaults absorbs the handoff, establishes its prerequisites and authorization boundary, and then reads the matching bundled method under `<supervaults-root>/vendor/` internally.
 
 Do not load every reference. Follow the shared protocol, select a mode, then follow that mode's ordered recipe: load its prerequisite references and complete its focused preinspection before reading or invoking a vendored method. Read any invoked vendored file completely before following it.
 
@@ -23,7 +27,7 @@ Resolve vault → preinspect → choose lifecycle action → choose operating mo
 2. Preinspect the relevant lifecycle neighborhood before creating anything. Read [lifecycle routing](references/lifecycle-routing.md), inspect current contracts, workstreams, recent sessions, Git state, and available external references, then choose `resume`, `extend`, `promote`, `implement`, `supersede`, `merge`, `create-new`, or `reference-only`.
 3. Select the operating mode below. If intent could reasonably select different lifecycle actions, report the evidence found and ask the user to choose; do not create a competing workstream or contract.
 4. Before material mutation, state the bounded outcome, explicit exclusions, risk, and expected blast radius. Open one uniquely owned session for each independent execution owner. Trivial edits need no session unless durable context would otherwise be lost.
-5. Read [operating modes](references/operating-modes.md), load the selected mode's prerequisites in order, and only then read the applicable `vendor/.../SKILL.md` completely. That vendored module is authoritative for its engineering procedure and gates; apply Supervaults' internal-method branding and handoff adaptation.
+5. Read [operating modes](references/operating-modes.md), load the selected mode's prerequisites in order, and only then read the applicable `../../vendor/.../SKILL.md` completely. That vendored module is authoritative for its engineering procedure and gates; apply Supervaults' internal-method branding and handoff adaptation.
 6. After every design, planning, execution, review, or verification phase, explicitly return control to Supervaults. Record the actual result and actual blast radius, evidence, deviations, blockers, and exact next action; reconcile the session into the owning workstream and project truth.
 7. Read [quality gates](references/quality-gates.md), run fresh project checks and vault validation, then make only evidence-supported state or delivery claims. Write a handoff before closing a session.
 
@@ -60,7 +64,7 @@ Use the canonical impact surfaces and structured evidence contract in [quality g
 
 ## Helpers
 
-Run helpers from the repository root. They automate Markdown mechanics but do not choose lifecycle actions or replace engineering checks.
+Run helpers with the working directory set to `<supervaults-root>`, passing the target repository's vault and artifact paths as absolute paths when the target is elsewhere. They automate Markdown mechanics but do not choose lifecycle actions or replace engineering checks.
 
 ```text
 python -m skills.supervaults.scripts.supervaults init --vault docs --project "Project Name"

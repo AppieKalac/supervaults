@@ -17,6 +17,7 @@ SKILL = ROOT / "skills/supervaults/SKILL.md"
 MODES = ROOT / "skills/supervaults/references/operating-modes.md"
 PLANNING = ROOT / "skills/supervaults/references/planning.md"
 QUALITY = ROOT / "skills/supervaults/references/quality-gates.md"
+ROUTING = ROOT / "skills/supervaults/references/lifecycle-routing.md"
 SESSION_TEMPLATE = ROOT / "skills/supervaults/templates/vault/session.md.tmpl"
 MANIFEST = ROOT / ".codex-plugin/plugin.json"
 
@@ -55,10 +56,31 @@ class SkillContractTests(unittest.TestCase):
         adaptation = section(text, "Internal method adaptation")
         self.assertIn("Using Supervaults' <phase>", adaptation)
         self.assertIn("superpowers:<skill>", adaptation)
-        self.assertIn("repository-relative", adaptation)
+        self.assertIn("plugin-relative", adaptation)
+        self.assertIn("never resolve it from the target repository", adaptation)
         self.assertIn("never tell the user to invoke", adaptation.lower())
         self.assertIn("approval", adaptation.lower())
         self.assertIn("review", adaptation.lower())
+
+    def test_installed_skill_anchors_plugin_paths_and_absorbs_external_phase_handoffs(self):
+        text = SKILL.read_text(encoding="utf-8")
+        description = text.split("---", 2)[1].lower()
+        self.assertIn("before separately installed superpowers methods", description)
+        self.assertIn("two directory levels above this `SKILL.md`", text)
+        self.assertIn("do not run that separate phase", text)
+        self.assertIn("working directory set to `<supervaults-root>`", text)
+
+        references = ROOT / "skills/supervaults/references"
+        corpus = "\n".join(
+            path.read_text(encoding="utf-8") for path in sorted(references.glob("*.md"))
+        )
+        self.assertNotRegex(corpus, r"(?<!\.\./\.\./)vendor/(?:superpowers|obsidian-skills)/")
+
+    def test_empty_project_vault_requires_an_approved_resolved_destination(self):
+        routing = ROUTING.read_text(encoding="utf-8").lower()
+        self.assertIn("propose `docs/`", routing)
+        self.assertIn("approved destination", routing)
+        self.assertIn("before initialization", routing)
 
     def test_resolved_vault_overrides_vendor_contract_locations(self):
         text = PLANNING.read_text(encoding="utf-8")
@@ -135,9 +157,9 @@ class SkillContractTests(unittest.TestCase):
         )
         obsidian = ("json-canvas", "obsidian-bases", "obsidian-cli", "obsidian-markdown")
         for name in superpowers:
-            self.assertIn(f"vendor/superpowers/skills/{name}/SKILL.md", corpus)
+            self.assertIn(f"../../vendor/superpowers/skills/{name}/SKILL.md", corpus)
         for name in obsidian:
-            self.assertIn(f"vendor/obsidian-skills/skills/{name}/SKILL.md", corpus)
+            self.assertIn(f"../../vendor/obsidian-skills/skills/{name}/SKILL.md", corpus)
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         registered = [path.name for path in (ROOT / manifest["skills"]).iterdir() if path.is_dir()]
         self.assertEqual(registered, ["supervaults"])

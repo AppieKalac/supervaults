@@ -36,6 +36,6 @@ At end of day, never silently roll work forward. Reconcile every selection as fi
 
 ## Engineering plans
 
-When an approved design needs multi-step, risky, cross-component, or multi-session execution, read `vendor/superpowers/skills/writing-plans/SKILL.md` completely and follow it as the authoritative planning method with the resolved-vault location override above. Preserve its specification link and prospective task contract. For bounded approved work that its method says needs no plan document, do not create one merely for vault symmetry.
+When an approved design needs multi-step, risky, cross-component, or multi-session execution, read `../../vendor/superpowers/skills/writing-plans/SKILL.md` completely and follow it as the authoritative planning method with the resolved-vault location override above. Preserve its specification link and prospective task contract. For bounded approved work that its method says needs no plan document, do not create one merely for vault symmetry.
 
 Any vendored upstream file invoked from this reference must be read completely and remains authoritative for its engineering method. After the vendored planning phase ends, explicitly return control to Supervaults: link the plan to its workstream, record the planning outcome and evidence, reconcile stage/status and next action, validate the vault, and hand off. The plan never replaces the workstream's current state.

@@ -131,10 +131,25 @@ def _has_filler_detail_segment(value: str) -> bool:
 
     segments = re.split(r"\s*(?:—|--)\s*|\s+-\s+|:\s*", value)
     for segment in segments[1:]:
-        if _compact(segment) in _FILLER_COMPACT:
+        if _is_filler_segment(segment):
             return True
-        if _UNRESOLVED_MARKER.search(segment) or _PLACEHOLDER.search(segment):
+
+    # A single hyphen is also a valid result-detail delimiter. Inspect the
+    # whole suffix instead of splitting every hyphen so concrete compounds
+    # such as "release-ready" and "parser-state" remain valid.
+    for delimiter in re.finditer(r"(?<!-)-(?!-)", value):
+        if _is_filler_segment(value[delimiter.end():]):
             return True
+
+    parenthesized_detail = re.search(r"\(([^()]*)\)\s*$", value)
+    return bool(parenthesized_detail and _is_filler_segment(parenthesized_detail.group(1)))
+
+
+def _is_filler_segment(segment: str) -> bool:
+    if _compact(segment) in _FILLER_COMPACT:
+        return True
+    if _UNRESOLVED_MARKER.search(segment) or _PLACEHOLDER.search(segment):
+        return True
     return False
 
 

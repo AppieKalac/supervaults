@@ -83,6 +83,7 @@ class LifecycleTests(unittest.TestCase):
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: TBD\nResult: passed — 1 check", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed content", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: PASSED — DETAILS", "Current state: active\nNext action: review"),
+                ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed (details)", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: passed - placeholder", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser", "Check: focused test\nResult: FAILED — TODO", "Current state: active\nNext action: review"),
                 ("- Surface: Tests and tooling\n  State: changed\n  Detail: {{DETAIL}}", "Check: focused test\nResult: passed — 1 check", "Current state: active\nNext action: review"),
@@ -112,6 +113,71 @@ class LifecycleTests(unittest.TestCase):
                 write_note(note.__class__(note.path, note.properties, self._evidence_body(note.body, verification=verification)))
                 close_session(vault, session, None)
                 self.assertEqual(parse_note(session).properties["status"], "verified")
+
+    def test_close_rejects_bare_hyphen_filler_suffixes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            cases = (
+                (
+                    "- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser",
+                    "Check: focused test\nResult: passed-details",
+                    "Current state: active\nNext action: review",
+                    "Verification evidence",
+                ),
+                (
+                    "- Surface: Tests and tooling\n  State: changed\n  Detail: changed-details",
+                    "Check: focused test\nResult: passed-1 check",
+                    "Current state: active\nNext action: review",
+                    "Actual blast radius",
+                ),
+                (
+                    "- Surface: Tests and tooling\n  State: changed\n  Detail: scanner parser",
+                    "Check: focused test\nResult: passed-1 check",
+                    "Current state: verified-details\nNext action: review",
+                    "Handoff",
+                ),
+            )
+            for index, (actual, verification, handoff, invalid_section) in enumerate(cases):
+                with self.subTest(section=invalid_section):
+                    session = open_session(
+                        vault,
+                        workstream,
+                        f"bare hyphen filler {index}",
+                        datetime(2026, 8, 27, 11, index),
+                        "agent-a",
+                    )
+                    note = parse_note(session)
+                    body = self._evidence_body(note.body, actual, verification, handoff)
+                    write_note(note.__class__(note.path, note.properties, body))
+                    with self.assertRaisesRegex(LifecycleStateError, invalid_section):
+                        close_session(vault, session, None)
+
+    def test_close_accepts_concrete_bare_hyphen_details_and_hyphenated_words(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+            workstream = self._workstream(vault)
+            session = open_session(
+                vault,
+                workstream,
+                "concrete bare hyphen",
+                datetime(2026, 8, 27, 11, 30),
+                "agent-a",
+            )
+            note = parse_note(session)
+            body = self._evidence_body(
+                note.body,
+                actual="- Surface: Tests and tooling\n  State: changed\n  Detail: Parser-state transitions are covered.",
+                verification="Check: focused lifecycle suite\nResult: passed-26 lifecycle tests",
+                handoff="Current state: Release-ready evidence is recorded.\nNext action: Run post-release checks.",
+            )
+            write_note(note.__class__(note.path, note.properties, body))
+
+            close_session(vault, session, None)
+
+            self.assertEqual(parse_note(session).properties["status"], "verified")
 
     def test_close_preserves_explicit_complete_and_nonmatching_current_session(self):
         with tempfile.TemporaryDirectory() as directory:

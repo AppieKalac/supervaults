@@ -1,3 +1,6 @@
+properties:
+  selected_workstreams:
+    displayName: "Selected workstreams"
 views:
   - type: table
     name: "Open daily plans"
@@ -8,14 +11,5 @@ views:
     order:
       - file.name
       - date
-      - status
-  - type: table
-    name: "Selected workstreams"
-    filters:
-      and:
-        - 'type == "workstream"'
-        - 'status == "active"'
-    order:
-      - file.name
-      - stage
+      - selected_workstreams
       - status

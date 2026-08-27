@@ -54,6 +54,20 @@ class VaultInitializationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unresolved template marker"):
                 render_template(template, {})
 
+    def test_daily_planning_base_displays_daily_plan_selections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "docs"
+            initialize_vault(vault, "Inventory", date(2026, 8, 27))
+
+            daily = parse_note(vault / "daily" / "2026-08-27.md")
+            base = (vault / "views" / "Daily Planning.base").read_text(encoding="utf-8")
+
+            self.assertEqual(daily.properties["selected_workstreams"], "")
+            self.assertIn('name: "Open daily plans"', base)
+            self.assertIn("      - selected_workstreams", base)
+            self.assertNotIn('name: "Selected workstreams"', base)
+            self.assertNotIn('type == "workstream"', base)
+
 
 if __name__ == "__main__":
     unittest.main()

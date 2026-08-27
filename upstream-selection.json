@@ -1,0 +1,29 @@
+{
+  "superpowers": {
+    "repository": "https://github.com/obra/superpowers.git",
+    "paths": [
+      "skills/brainstorming",
+      "skills/dispatching-parallel-agents",
+      "skills/executing-plans",
+      "skills/finishing-a-development-branch",
+      "skills/receiving-code-review",
+      "skills/requesting-code-review",
+      "skills/subagent-driven-development",
+      "skills/systematic-debugging",
+      "skills/test-driven-development",
+      "skills/using-git-worktrees",
+      "skills/using-superpowers",
+      "skills/verification-before-completion",
+      "skills/writing-plans"
+    ]
+  },
+  "obsidian-skills": {
+    "repository": "https://github.com/kepano/obsidian-skills.git",
+    "paths": [
+      "skills/json-canvas",
+      "skills/obsidian-bases",
+      "skills/obsidian-cli",
+      "skills/obsidian-markdown"
+    ]
+  }
+}

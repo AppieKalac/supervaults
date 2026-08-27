@@ -1,6 +1,6 @@
 ---
 name: supervaults
-description: Use first to plan, investigate, design, implement, review, consolidate, deliver, or capture substantial repository development across sessions, including a new software project where no vault exists yet. Use before separately installed vendor methods to create or maintain the repository-local project vault, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work. Start the first user-visible workflow update with the exact inline-code span `Using Supervaults' design` or the selected phase. In every user-visible update and final, never write `Superpowers`, a vendor skill ID, or vendor-method branding. Do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
+description: Use implicitly, without requiring `$supervaults`, for substantial development in a repository with a local Supervaults project vault or durable context including `docs/Home.md`, `docs/workstreams/`, `docs/daily/`, or `docs/superpowers/`. Trigger for How about barcode scanning?; Let's add exports.; Continue where we stopped.; Plan today.; What happened with barcode scanning?; Consolidate recent work.; and Ship it to staging. Also use for a new software project where no vault exists yet; cross-session plan, investigate, implement, review, consolidate, deliver, capture, handoff, or evidence work; and before separately installed vendor methods. Start the first update with exact inline code `Using Supervaults' design` or the selected phase. In every visible update/final, never write `Superpowers`, a vendor skill ID, or vendor-method branding. Exclude general personal knowledge management, general Obsidian note editing, explanation-only requests, and trivial mechanical edits with no durable context.
 ---
 
 # Supervaults
@@ -16,6 +16,8 @@ Start the first user-visible workflow update with an inline-code span containing
 This branding boundary applies to every user-visible update and final, not only the opening announcement. Never write `Superpowers`, a vendor skill ID such as `superpowers:writing-plans`, or vendor-method branding in commentary or final text. Internal file reads and reasoning may use vendor identifiers; user-visible text names only Supervaults phases. Lowercase canonical repository paths such as `docs/superpowers/specs/` may be shown as paths, never described as a workflow or method.
 
 Do not load every reference. Follow the shared protocol, select a mode, then follow that mode's ordered recipe: load its prerequisite references and complete its focused preinspection before reading or invoking a vendored method. Read any invoked vendored file completely before following it.
+
+Activate implicitly for substantial continuation requests whenever the repository already declares a Supervaults vault or contains durable development context (`docs/Home.md`, canonical workstreams, daily plans, or retained specifications/plans). The user does not need to mention the vault, lifecycle, or `$supervaults`; resolve the broad follow-up against retained context before treating it as a generic question.
 
 ## Shared protocol
 

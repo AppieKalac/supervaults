@@ -40,6 +40,27 @@ class SkillContractTests(unittest.TestCase):
             self.assertIn(phrase, description.lower())
         self.assertIn("new software project where no vault exists yet", description.lower())
 
+    def test_established_vault_continuations_activate_without_explicit_invocation(self):
+        text = SKILL.read_text(encoding="utf-8")
+        description = text.split("---", 2)[1].lower()
+        prompts = (
+            "how about barcode scanning?",
+            "let's add exports.",
+            "continue where we stopped.",
+            "plan today.",
+            "what happened with barcode scanning?",
+            "consolidate recent work.",
+            "ship it to staging.",
+        )
+        for prompt in prompts:
+            with self.subTest(prompt=prompt):
+                self.assertIn(prompt, description)
+        for signal in ("docs/home.md", "docs/workstreams/", "docs/daily/", "docs/superpowers/"):
+            self.assertIn(signal, description)
+        self.assertIn("without requiring `$supervaults`", description)
+        self.assertIn("general obsidian note editing", description)
+        self.assertIn("trivial mechanical edits", description)
+
     def test_required_modes_and_gates_are_present(self):
         text = SKILL.read_text(encoding="utf-8").lower()
         for token in ("orient", "plan", "investigate", "design", "implement", "review", "consolidate", "deliver", "capture"):

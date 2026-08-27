@@ -1,6 +1,6 @@
 {
   "name": "supervaults",
-  "version": "0.1.0",
+  "version": "0.1.0+codex.20260827145245",
   "description": "Workstream-centered development memory powered by Superpowers and Obsidian.",
   "author": {
     "name": "Appie Kalac"
@@ -13,7 +13,11 @@
     "longDescription": "Workstream-centered development memory for planning, evidence, and continuity across coding sessions.",
     "developerName": "Appie Kalac",
     "category": "Developer Tools",
-    "capabilities": ["Interactive", "Read", "Write"],
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
     "defaultPrompt": [
       "Use $supervaults to orient me in this project's current work."
     ]

@@ -11,7 +11,10 @@ class PluginStructureTests(unittest.TestCase):
             (ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         self.assertEqual(manifest["name"], "supervaults")
-        self.assertEqual(manifest["version"], "0.1.0")
+        self.assertRegex(
+            manifest["version"],
+            r"^0\.1\.0(?:\+codex\.[A-Za-z0-9.-]+)?$",
+        )
         self.assertEqual(manifest["skills"], "./skills/")
 
     def test_only_supervaults_is_registered(self):

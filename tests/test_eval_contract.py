@@ -37,6 +37,7 @@ ORACLE_KINDS = {
 }
 GATES = {"clarification", "design-approval", "written-spec-approval", "execution-choice", "expected-stop"}
 MUTATION_DOMAINS = {"product_source_tree", "vault", "external"}
+CLARIFICATION_POLICY_KEYS = {"mode", "max_turns", "on_unmatched", "topics"}
 CANONICAL_RECORD_ROOTS = (
     "docs/records/investigations", "docs/records/reviews", "docs/records/releases",
 )
@@ -82,6 +83,34 @@ class EvaluationContractTests(unittest.TestCase):
                     self.assertTrue(step.get("agent_expectation", "").strip())
                     self.assertTrue(step.get("user_response", "").strip())
                 self.assertTrue(case.get("terminal_expectation", "").strip())
+
+    def test_empty_project_design_has_deterministic_multi_question_policy(self):
+        case = next(case for case in self.cases if case["id"] == "inventory-empty-design")
+        policy = case.get("clarification_policy", {})
+        self.assertEqual(set(policy), CLARIFICATION_POLICY_KEYS)
+        self.assertEqual(policy["mode"], "first-unused-topic-match")
+        self.assertGreaterEqual(policy["max_turns"], 6)
+        self.assertEqual(policy["on_unmatched"], "stop-inconclusive")
+        topics = policy["topics"]
+        self.assertEqual(
+            {topic["id"] for topic in topics},
+            {"form-factor", "persistence", "core-behavior", "scope", "success", "vault"},
+        )
+        for topic in topics:
+            with self.subTest(topic=topic["id"]):
+                self.assertTrue(topic["match_any"])
+                self.assertTrue(topic["user_response"].strip())
+                self.assertNotIn("reasoning", _serialized(topic))
+        form = next(topic for topic in topics if topic["id"] == "form-factor")
+        self.assertTrue({"form", "browser", "desktop", "command-line"}.issubset(set(form["match_any"])))
+        self.assertIn("browser-based web app", form["user_response"])
+
+    def test_plan_today_resume_contract_distinguishes_note_creation(self):
+        case = next(case for case in self.cases if case["id"] == "plan-established-daily-links")
+        self.assertEqual(case["expected_lifecycle_action"], "resume")
+        response_oracles = [oracle for oracle in case["must"] if oracle["kind"] == "response"]
+        self.assertEqual(len(response_oracles), 1)
+        self.assertEqual(response_oracles[0]["assertion"], "announces-resume-not-create-new")
 
     def test_cases_use_concrete_selectors_and_observable_artifact_coverage(self):
         for case in self.cases:

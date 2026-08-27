@@ -62,11 +62,25 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("never tell the user to invoke", adaptation.lower())
         self.assertIn("approval", adaptation.lower())
         self.assertIn("review", adaptation.lower())
+        self.assertIn("Never describe a bundled phase as a Superpowers", adaptation)
+
+    def test_user_visible_phase_branding_is_always_supervaults(self):
+        text = SKILL.read_text(encoding="utf-8")
+        self.assertIn("Using Supervaults' <phase>", text)
+        self.assertIn("first user-visible workflow update", text)
+        self.assertIn("do not name Superpowers", text)
+
+    def test_daily_note_mechanics_do_not_change_resume_lifecycle_action(self):
+        text = PLANNING.read_text(encoding="utf-8")
+        plan_today = section(text, "Plan today")
+        self.assertIn("lifecycle action is `resume`", plan_today)
+        self.assertIn("artifact mechanics", plan_today)
+        self.assertIn("not `create-new`", plan_today)
 
     def test_installed_skill_anchors_plugin_paths_and_absorbs_external_phase_handoffs(self):
         text = SKILL.read_text(encoding="utf-8")
         description = text.split("---", 2)[1].lower()
-        self.assertIn("before separately installed superpowers methods", description)
+        self.assertIn("before separately installed vendor methods", description)
         self.assertIn("two directory levels above this `SKILL.md`", text)
         self.assertIn("do not run that separate phase", text)
         self.assertIn("working directory set to `<supervaults-root>`", text)

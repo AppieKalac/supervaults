@@ -47,11 +47,15 @@ The first command works wherever `python` resolves to Python 3; use the platform
    ```
 
    On Windows use `py -3` if `python` is not Python 3; on macOS/Linux use `python3` if needed. The helper is standard-library only and refuses an existing child destination.
-3. Capture the baseline of the created deterministic fixture before agent execution: recursive vault file list, parsed Markdown frontmatter/link inventory, `git status --short`, `git log -1 --oneline`, and the local fake-audit file when the overlay creates one. Save them under an evaluator-owned `artifacts/before/` directory outside the fixture repository.
+3. Capture the baseline of the created deterministic fixture before agent execution: recursive vault file list with content hashes, parsed Markdown frontmatter/link inventory, Git status/branch/HEAD/latest commit/diff inventory, and every local fake-audit file. Save it under an evaluator-owned directory outside the fixture repository. The checked-in harness captures the required plugin and environment metadata at the same time:
+
+   ```text
+   python tests/evals/evidence.py snapshot --project <fixture> --plugin-root <installed-plugin-root> --output <artifacts>/before.json
+   ```
 4. Record environment metadata before dispatch: Supervaults plugin version from `.codex-plugin/plugin.json`, upstream commits from `upstream-lock.json`, agent identifier and model, repository commit/branch, operating system and Python version, date/time, fixture ID, case ID, and the exact prompt text.
-5. Give the clean agent exactly the prompt and then each `gate_script` response in order. Do not add hints or skip a Superpowers approval gate. An `expected-stop` response is an explicit instruction to stop; staging cases operate only on the overlay's `local-fake://staging` audit file and never contact a real deployment system.
+5. Give the clean agent exactly the prompt. When a case has `clarification_policy`, answer one-at-a-time clarification questions before advancing the remaining `gate_script`: normalize the question to lowercase, scan `topics` in listed order, and send the `user_response` for the first unused topic whose `match_any` token occurs. Retain every question and exact reply. Never add an inferred answer, reuse a topic, or reveal evaluator expectations. Stop and score the case `inconclusive` on an unmatched question, after `max_turns`, or whenever `on_unmatched` requires it. Then send each remaining gate response in order without adding hints or skipping an approval gate. An `expected-stop` response is an explicit instruction to stop; staging cases operate only on the overlay's `local-fake://staging` audit file and never contact a real deployment system.
 6. Let the agent complete the case's `terminal_expectation`. For a follow-up scenario, begin a new fresh agent turn only after taking a new snapshot and preserve the previous session/handoff as fixture evidence.
-7. Capture an after snapshot with the same file, frontmatter/link, Git, and fake-audit evidence. Run the case's listed validator and project test commands fresh, retaining stdout, stderr, exit code, and command line.
+7. Capture an after snapshot with the same harness and retain its full JSON. Run the case's listed validator and project test commands fresh, retaining stdout, stderr, exit code, and command line.
 8. Score the case manually using `tests/evals/expected-behaviors.md` and the `must`/`must_not` objects. Resolve `{{RUN_DATE}}`, `{{PREVIOUS_DATE}}`, and `{{RUN_DATETIME}}` first; inspect only observable evidence and the declared mutation domains.
 
 Run prompts in a separate fixture for every case. Each case's complete prerequisite is the named base fixture plus its entry in `tests/evals/fixtures/case-overlays.json`; do not invent extra state. For the eight broad prompts, run the empty-project case first and the established-multi-session case second. Do not carry a prior agent's conversational context into a fresh-agent run.
@@ -84,6 +88,12 @@ failure_or_evidence_gap:
 ```
 
 For each `must` and `must_not`, include the oracle object, the observed path/link/property/status/command or audit evidence, and pass/fail. Retain snapshots and full command output by path so another evaluator can reproduce the score.
+
+Before reporting a live case as passed, verify that its JSON record has both snapshots, ordered prompt/reply dialogue, command output, changed-artifact and external-mutation inventories, and exactly one scored result with evidence for every oracle:
+
+```text
+python tests/evals/evidence.py verify-record --record <artifacts>/evaluation-record.json --case <case-id>
+```
 
 ## Failure triage
 

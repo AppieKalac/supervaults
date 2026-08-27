@@ -24,6 +24,8 @@ This user/project location override takes precedence over the vendored `docs/` d
 
 Inspect the previous plan and unfinished selections, active/ready/blocked workstreams, recent handoffs, Git state, verification/review/delivery gaps, available external constraints, and inbox ideas. Do not automatically promote an inbox idea.
 
+When today's selected outcome already has a canonical workstream, the lifecycle action is `resume`. Creating or reusing the dated daily note is artifact mechanics only, not `create-new`; use `extend` only when the selected outcome's scope actually changes. State the outcome lifecycle action separately from the note operation.
+
 Rank candidates by continuity, delivery gaps, unblocking value, risk, user value, urgency, dependencies, available focus/access, and staleness. Explain recommendations and leave selection to the developer. Prefer one primary outcome, one optional secondary outcome, small maintenance, known constraints, and `Not today`. Record outcome-level finish conditions and link the workstream/engineering plan.
 
 Create or reuse today's retained plan with:

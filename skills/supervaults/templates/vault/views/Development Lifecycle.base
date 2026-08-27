@@ -1,0 +1,19 @@
+filters:
+  and:
+    - 'type == "workstream"'
+    - 'status == "active"'
+properties:
+  stage:
+    displayName: "Stage"
+  status:
+    displayName: "Status"
+views:
+  - type: table
+    name: "Active workstreams"
+    groupBy:
+      property: stage
+      direction: ASC
+    order:
+      - file.name
+      - stage
+      - status

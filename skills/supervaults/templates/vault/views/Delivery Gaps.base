@@ -1,0 +1,28 @@
+filters:
+  and:
+    - 'type == "workstream"'
+    - 'status != "complete"'
+    - 'status != "superseded"'
+    - or:
+        - 'stage == "verification"'
+        - 'stage == "review"'
+        - 'stage == "integration"'
+        - 'stage == "release"'
+        - 'stage == "deployment"'
+        - 'stage == "observation"'
+        - 'stage == "maintenance"'
+properties:
+  stage:
+    displayName: "Stage"
+  status:
+    displayName: "Status"
+views:
+  - type: table
+    name: "Incomplete delivery work"
+    groupBy:
+      property: stage
+      direction: ASC
+    order:
+      - file.name
+      - stage
+      - status

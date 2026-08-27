@@ -19,10 +19,42 @@ WIKI_LINK = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]")
 REQUIRED_RECORD_KEYS = {
     "case_id", "prompt", "fixture_context", "agent_identifier", "model",
     "plugin_metadata", "environment", "started_at", "finished_at",
-    "dialogue", "before_snapshot", "after_snapshot", "commands",
+    "dialogue", "transcript_branding_scan", "before_snapshot", "after_snapshot", "commands",
     "changed_artifacts", "external_mutations", "must_results",
     "must_not_results", "score", "failure_or_evidence_gap",
 }
+BRANDING_PATTERNS = (
+    ("superpowers-name", re.compile(r"\bSuperpowers\b")),
+    ("vendor-skill-id", re.compile(r"\bsuperpowers:[a-z0-9-]+\b", re.IGNORECASE)),
+    ("vendor-method-branding", re.compile(r"\bvendor(?:ed)?\s+(?:method|skill|workflow)\b", re.IGNORECASE)),
+    (
+        "bundled-method-branding",
+        re.compile(
+            r"\b(?:using-superpowers|brainstorming|writing-plans|executing-plans|"
+            r"systematic-debugging|test-driven-development)\s+(?:method|skill|workflow)\b",
+            re.IGNORECASE,
+        ),
+    ),
+)
+
+
+def scan_user_visible_branding(dialogue: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Return forbidden vendor-branding matches from all agent-visible exchanges."""
+    hits: list[dict[str, Any]] = []
+    for index, exchange in enumerate(dialogue):
+        if exchange.get("speaker") not in {"agent", "assistant"}:
+            continue
+        text = exchange.get("text", "")
+        for rule, pattern in BRANDING_PATTERNS:
+            match = pattern.search(text)
+            if match:
+                hits.append({
+                    "exchange_index": index,
+                    "rule": rule,
+                    "match": match.group(0),
+                })
+                break
+    return hits
 
 
 def _run_git(project: Path, *args: str) -> dict[str, Any]:
@@ -128,6 +160,15 @@ def validate_record(record: dict[str, Any], case: dict[str, Any]) -> list[str]:
         set(exchange) != {"speaker", "text"} for exchange in record.get("dialogue", [])
     ):
         errors.append("dialogue must retain ordered speaker/text exchanges")
+    branding_hits = scan_user_visible_branding(record.get("dialogue", []))
+    expected_branding = {
+        "result": "fail" if branding_hits else "pass",
+        "hits": branding_hits,
+    }
+    if record.get("transcript_branding_scan") != expected_branding:
+        errors.append("transcript_branding_scan does not match complete agent dialogue")
+    if branding_hits and record.get("score") == "pass":
+        errors.append("score cannot pass with forbidden user-visible vendor branding")
     for command in record.get("commands", []):
         if not {"command", "stdout", "stderr", "exit_code"}.issubset(command):
             errors.append("every command needs command/stdout/stderr/exit_code")

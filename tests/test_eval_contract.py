@@ -110,14 +110,28 @@ class EvaluationContractTests(unittest.TestCase):
         policy = case.get("clarification_policy", {})
         self.assertEqual(set(policy), CLARIFICATION_POLICY_KEYS)
         self.assertEqual(policy["mode"], "first-unused-topic-match")
-        self.assertEqual(policy["max_turns"], 1)
+        self.assertEqual(policy["max_turns"], 4)
         self.assertEqual(policy["on_unmatched"], "stop-inconclusive")
-        self.assertEqual(len(policy["topics"]), 1)
-        topic = policy["topics"][0]
-        self.assertEqual(topic["id"], "known-scan-action")
-        self.assertTrue({"known barcode", "increase", "open item", "scan"}.issubset(set(topic["match_any"])))
-        self.assertIn("increase", topic["user_response"].lower())
-        self.assertIn("one", topic["user_response"].lower())
+        topics = {topic["id"]: topic for topic in policy["topics"]}
+        self.assertEqual(
+            set(topics),
+            {"known-scan-action", "barcode-assignment", "duplicate-invalid-scan", "device-input-form"},
+        )
+        expected_matches = {
+            "known-scan-action": {"known barcode", "increase", "open item", "scan"},
+            "barcode-assignment": {"assign", "adding items", "optional barcode", "require barcode"},
+            "duplicate-invalid-scan": {"unknown", "unmatched", "duplicate", "invalid"},
+            "device-input-form": {"camera", "handheld", "manual", "device"},
+        }
+        for topic_id, matches in expected_matches.items():
+            with self.subTest(topic=topic_id):
+                self.assertTrue(matches.issubset(set(topics[topic_id]["match_any"])))
+                self.assertTrue(topics[topic_id]["user_response"].strip())
+        self.assertIn("increase", topics["known-scan-action"]["user_response"].lower())
+        self.assertIn("one", topics["known-scan-action"]["user_response"].lower())
+        self.assertIn("optional", topics["barcode-assignment"]["user_response"].lower())
+        self.assertIn("reject", topics["duplicate-invalid-scan"]["user_response"].lower())
+        self.assertIn("manual", topics["device-input-form"]["user_response"].lower())
 
     def test_plan_today_resume_contract_distinguishes_note_creation(self):
         case = next(case for case in self.cases if case["id"] == "plan-established-daily-links")

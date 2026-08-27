@@ -56,7 +56,7 @@ The first command works wherever `python` resolves to Python 3; use the platform
 5. Give the clean agent exactly the prompt. When a case has `clarification_policy`, answer one-at-a-time clarification questions before advancing the remaining `gate_script`: normalize the question to lowercase, scan `topics` in listed order, and send the `user_response` for the first unused topic whose `match_any` token occurs. Retain every question and exact reply. Never add an inferred answer, reuse a topic, or reveal evaluator expectations. Stop and score the case `inconclusive` on an unmatched question, after `max_turns`, or whenever `on_unmatched` requires it. Then send each remaining gate response in order without adding hints or skipping an approval gate. An `expected-stop` response is an explicit instruction to stop; staging cases operate only on the overlay's `local-fake://staging` audit file and never contact a real deployment system.
 6. Let the agent complete the case's `terminal_expectation`. For a follow-up scenario, begin a new fresh agent turn only after taking a new snapshot and preserve the previous session/handoff as fixture evidence.
 7. Capture an after snapshot with the same harness and retain its full JSON. Run the case's listed validator and project test commands fresh, retaining stdout, stderr, exit code, and command line.
-8. Score the case manually using `tests/evals/expected-behaviors.md` and the `must`/`must_not` objects. Resolve `{{RUN_DATE}}`, `{{PREVIOUS_DATE}}`, and `{{RUN_DATETIME}}` first; inspect only observable evidence and the declared mutation domains.
+8. Score the case manually using `tests/evals/expected-behaviors.md` and the `must`/`must_not` objects. Resolve `{{RUN_DATE}}`, `{{PREVIOUS_DATE}}`, and `{{RUN_DATETIME}}` first; inspect only observable evidence and the declared mutation domains. Retain every agent update and final in `dialogue`, then record `transcript_branding_scan` from the complete dialogue. The record verifier rejects a false clean result and rejects a passing score when any agent message exposes `Superpowers`, a vendor skill ID, or vendor-method branding.
 
 Run prompts in a separate fixture for every case. Each case's complete prerequisite is the named base fixture plus its entry in `tests/evals/fixtures/case-overlays.json`; do not invent extra state. For the eight broad prompts, run the empty-project case first and the established-multi-session case second. Do not carry a prior agent's conversational context into a fresh-agent run.
 
@@ -79,6 +79,7 @@ authorization_given:
 artifacts_changed:
 git_evidence:
 external_mutations:
+transcript_branding_scan:
 validator_command_and_result:
 code_test_command_and_result:
 must_results:

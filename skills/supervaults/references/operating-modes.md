@@ -8,6 +8,7 @@ Vendored files remain byte-unchanged and authoritative for engineering procedure
 
 - Announce an internal phase as `Using Supervaults' <phase>`; do not advertise an unregistered vendored skill.
 - Never describe a bundled phase as a Superpowers workflow, skill, phase, or method in user-visible text. Vendor names remain internal implementation detail even when their procedure is authoritative.
+- Apply that rule to every user-visible update and final. Never expose `Superpowers`, a `superpowers:<skill>` ID, or vendored-method branding in progress, questions, approvals, or handoffs; internal reads remain allowed.
 - Translate a vendored `superpowers:<skill>` handoff into a plugin-relative read and route to `../../vendor/superpowers/skills/<skill>/SKILL.md`, after the destination mode's prerequisites are loaded. Resolve this from the main Supervaults skill directory through `<supervaults-root>`; never resolve it from the target repository or the current reference file.
 - Never tell the user to invoke a vendored skill directly. `$supervaults` retains control of the user-visible lifecycle.
 - Preserve the method's substantive procedure and every approval/review gate. This adaptation does not authorize skipping, weakening, or silently satisfying a gate.

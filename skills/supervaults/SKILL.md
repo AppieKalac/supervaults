@@ -1,6 +1,6 @@
 ---
 name: supervaults
-description: Use first to plan, investigate, design, implement, review, consolidate, deliver, or capture substantial repository development across sessions, including a new software project where no vault exists yet. Use before separately installed vendor methods to create or maintain the repository-local project vault, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work. In the first user-visible workflow update say `Using Supervaults' design` or the selected phase and do not name Superpowers as a separate phase. Do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
+description: Use first to plan, investigate, design, implement, review, consolidate, deliver, or capture substantial repository development across sessions, including a new software project where no vault exists yet. Use before separately installed vendor methods to create or maintain the repository-local project vault, daily planning, prior-work reconstruction, multi-agent handoffs, and evidence-backed lifecycle work. Start the first user-visible workflow update with the exact inline-code span `Using Supervaults' design` or the selected phase and do not name Superpowers as a separate phase. Do not use for general personal knowledge management, unrelated Obsidian editing, explanation-only requests, or trivial edits with no durable context.
 ---
 
 # Supervaults
@@ -11,7 +11,7 @@ Resolve the installed plugin root before following any path. Define `<supervault
 
 When a global skill-discovery rule has already loaded a separately installed Superpowers skill for the same request, read Supervaults next and do not run that separate phase, announce it as the active workflow, or follow its handoff directly. Supervaults absorbs the handoff, establishes its prerequisites and authorization boundary, and then reads the matching bundled method under `<supervaults-root>/vendor/` internally.
 
-In the first user-visible workflow update, copy the literal ASCII prefix `Using Supervaults' ` and append the selected phase such as `design` or `plan`. Do not replace the straight apostrophe with a typographic apostrophe. The resulting announcement follows `Using Supervaults' <phase>`. Keep vendor method names internal: do not name Superpowers as a separate workflow, planning phase, skill, or method in user-visible progress or handoff text.
+Start the first user-visible workflow update with an inline-code span containing the literal ASCII prefix `Using Supervaults' ` and the selected phase, for example `` `Using Supervaults' design` `` or `` `Using Supervaults' plan` ``. Copy the span exactly; do not replace the straight apostrophe with a typographic apostrophe. The rendered announcement follows `Using Supervaults' <phase>`. Keep vendor method names internal: do not name Superpowers as a separate workflow, planning phase, skill, or method in user-visible progress or handoff text.
 
 Do not load every reference. Follow the shared protocol, select a mode, then follow that mode's ordered recipe: load its prerequisite references and complete its focused preinspection before reading or invoking a vendored method. Read any invoked vendored file completely before following it.
 

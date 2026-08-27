@@ -69,6 +69,7 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("Using Supervaults' <phase>", text)
         self.assertIn("first user-visible workflow update", text)
         self.assertIn("do not name Superpowers", text)
+        self.assertIn("literal ASCII prefix", text)
 
     def test_daily_note_mechanics_do_not_change_resume_lifecycle_action(self):
         text = PLANNING.read_text(encoding="utf-8")

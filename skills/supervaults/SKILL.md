@@ -11,7 +11,7 @@ Resolve the installed plugin root before following any path. Define `<supervault
 
 When a global skill-discovery rule has already loaded a separately installed Superpowers skill for the same request, read Supervaults next and do not run that separate phase, announce it as the active workflow, or follow its handoff directly. Supervaults absorbs the handoff, establishes its prerequisites and authorization boundary, and then reads the matching bundled method under `<supervaults-root>/vendor/` internally.
 
-In the first user-visible workflow update, announce `Using Supervaults' <phase>`, substituting the selected mode such as `design` or `plan`. Keep vendor method names internal: do not name Superpowers as a separate workflow, planning phase, skill, or method in user-visible progress or handoff text.
+In the first user-visible workflow update, copy the literal ASCII prefix `Using Supervaults' ` and append the selected phase such as `design` or `plan`. Do not replace the straight apostrophe with a typographic apostrophe. The resulting announcement follows `Using Supervaults' <phase>`. Keep vendor method names internal: do not name Superpowers as a separate workflow, planning phase, skill, or method in user-visible progress or handoff text.
 
 Do not load every reference. Follow the shared protocol, select a mode, then follow that mode's ordered recipe: load its prerequisite references and complete its focused preinspection before reading or invoking a vendored method. Read any invoked vendored file completely before following it.
 
